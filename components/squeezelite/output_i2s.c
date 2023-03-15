@@ -84,7 +84,7 @@ extern struct buffer *streambuf;
 extern struct buffer *outputbuf;
 extern u8_t *silencebuf;
 
-const struct adac_s *dac_set[] = { &dac_tas57xx, &dac_tas5713, &dac_ac101, &dac_wm8978, NULL };
+const struct adac_s *dac_set[] = { &dac_tas57xx, &dac_tas5713, &dac_ac101, &dac_wm8978, &dac_wm8711bl, NULL };
 const struct adac_s *adac = &dac_external;
 
 static log_level loglevel;

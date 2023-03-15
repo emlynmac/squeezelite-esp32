@@ -71,7 +71,7 @@ typedef enum {
 } parse_state_t;
 static const char *TAG = "cmd_config";
 extern struct arg_end *getParmsEnd(struct arg_hdr * * argtable);
-//bck=<gpio>,ws=<gpio>,do=<gpio>[,mute=<gpio>[:0|1][,model=TAS57xx|TAS5713|AC101|WM8978|I2S][,sda=<gpio>,scl=gpio[,i2c=<addr>]]
+//bck=<gpio>,ws=<gpio>,do=<gpio>[,mute=<gpio>[:0|1][,model=TAS57xx|TAS5713|AC101|WM8978|WM8711BL|I2S][,sda=<gpio>,scl=gpio[,i2c=<addr>]]
 static struct {
 	struct arg_str *model_name;
     struct arg_int *clock;
@@ -868,7 +868,7 @@ static char * get_log_level_options(const char * longname){
 	return options;
 }
 static void register_i2s_config(void){
-	i2s_args.model_name = arg_str1(NULL,"model_name","TAS57xx|TAS5713|AC101|WM8978|I2S","DAC Model Name");
+	i2s_args.model_name = arg_str1(NULL,"model_name","TAS57xx|TAS5713|AC101|WM8978|WM8711BL|I2S","DAC Model Name");
 	i2s_args.clear = arg_lit0(NULL, "clear", "Clear configuration");
     i2s_args.clock = arg_int1(NULL,"clock","<n>","Clock GPIO. e.g. 33");
     i2s_args.wordselect = arg_int1(NULL,"wordselect","<n>","Word Select GPIO. e.g. 25");

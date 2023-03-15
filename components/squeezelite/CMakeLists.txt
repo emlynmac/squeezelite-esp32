@@ -1,4 +1,4 @@
-idf_component_register( SRC_DIRS . external ac101 tas57xx wm8978
+idf_component_register( SRC_DIRS . external ac101 tas57xx wm8978 wm8711bl
 						INCLUDE_DIRS .  ac101 
 						PRIV_REQUIRES 	
 									codecs
@@ -20,7 +20,7 @@ set_source_files_properties(mad.c pcm.c flac.c alac.c helix-aac.c vorbis.c opus.
     -Wno-maybe-uninitialized 
 )
 
-set_source_files_properties(wm8978/wm8978.c
+set_source_files_properties(wm8978/wm8978.c wm8711bl/wm8711bl.c
     PROPERTIES COMPILE_FLAGS
     -Wno-unused-function
 )	

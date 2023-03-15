@@ -124,7 +124,7 @@
 			"help":	"DAC Options",
 			"hascb":	true,
 			"argtable":	[{
-					"datatype":	"TAS57xx|TAS5713|AC101|WM8978|I2S",
+					"datatype":	"TAS57xx|TAS5713|AC101|WM8978|WM8711BL|I2S",
 					"glossary":	"DAC Model Name",
 					"longopts":	"model_name",
 					"checkbox":	false,
@@ -202,7 +202,7 @@
 					"mincount":	0,
 					"maxcount":	1
 				}],
-			"hint":	" --model_name=TAS57xx|TAS5713|AC101|WM8978|I2S --clock=<n> --wordselect=<n> --data=<n> [--mute_gpio=<n>] [--mute_level] [--dac_sda=<n>] [--dac_scl=<n>] [--dac_i2c=<n>] [--clear]",
+			"hint":	" --model_name=TAS57xx|TAS5713|AC101|WM8978|WM8711BL|I2S --clock=<n> --wordselect=<n> --data=<n> [--mute_gpio=<n>] [--mute_level] [--dac_sda=<n>] [--dac_scl=<n>] [--dac_i2c=<n>] [--clear]",
 			"name":	"cfg-hw-dac"
 		}, {
 			"help":	"SPDIF Options",
