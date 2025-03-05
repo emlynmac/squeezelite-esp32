@@ -2,9 +2,6 @@
 	path = components/telnet/libtelnet
 	url = https://github.com/seanmiddleditch/libtelnet
 	branch = develop
-[submodule "components/esp-dsp"]
-	path = components/esp-dsp
-	url = https://github.com/philippe44/esp-dsp.git
 [submodule "components/wifi-manager/UML-State-Machine-in-C"]
 	path = components/wifi-manager/UML-State-Machine-in-C
 	url = https://github.com/kiishor/UML-State-Machine-in-C
