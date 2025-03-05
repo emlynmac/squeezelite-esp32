@@ -111,8 +111,8 @@ void config_init(){
 
 void config_start_timer(){
 	ESP_LOGD(TAG, "Starting config timer");
-	timer = xTimerCreate("configTimer", CONFIG_COMMIT_DELAY / portTICK_RATE_MS, pdFALSE, NULL, vCallbackFunction);
-    if( xTimerStart( timer , CONFIG_COMMIT_DELAY/ portTICK_RATE_MS ) != pdPASS )    {
+	timer = xTimerCreate("configTimer", CONFIG_COMMIT_DELAY / portTICK_PERIOD_MS, pdFALSE, NULL, vCallbackFunction);
+    if( xTimerStart( timer , CONFIG_COMMIT_DELAY/ portTICK_PERIOD_MS ) != pdPASS )    {
         ESP_LOGE(TAG, "config commitment timer failed to start.");
     }
 

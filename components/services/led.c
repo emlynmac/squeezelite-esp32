@@ -126,7 +126,7 @@ static void vCallbackFunction( TimerHandle_t xTimer ) {
 	if (!led->on && led->offtime == -1) return;
 
 	// regular blinking
-	xTimerChangePeriod(xTimer, (led->on ? led->ontime : led->offtime) / portTICK_RATE_MS, BLOCKTIME);
+	xTimerChangePeriod(xTimer, (led->on ? led->ontime : led->offtime) / portTICK_PERIOD_MS, BLOCKTIME);
 }
 
 /****************************************************************************************
@@ -166,7 +166,7 @@ bool led_blink_core(int idx, int ontime, int offtime, bool pushed) {
 	} else {
 		if (!leds[idx].timer) {
 			ESP_LOGD(TAG,"led %d, Creating timer", idx);
-			leds[idx].timer = xTimerCreate("ledTimer", ontime / portTICK_RATE_MS, pdFALSE, (void *)&leds[idx], vCallbackFunction);
+			leds[idx].timer = xTimerCreate("ledTimer", ontime / portTICK_PERIOD_MS, pdFALSE, (void *)&leds[idx], vCallbackFunction);
 		}
         leds[idx].on = true;
 		set_level(leds + idx, true);

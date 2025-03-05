@@ -717,7 +717,7 @@ static esp_err_t i2c_write(uint8_t port, uint8_t addr, uint8_t reg, uint32_t dat
 	else i2c_master_write_byte(cmd, data, I2C_MASTER_NACK);
     
 	i2c_master_stop(cmd);
-	esp_err_t ret = i2c_master_cmd_begin(port, cmd, 100 / portTICK_RATE_MS);
+	esp_err_t ret = i2c_master_cmd_begin(port, cmd, 100 / portTICK_PERIOD_MS);
     i2c_cmd_link_delete(cmd);
 	
 	if (ret != ESP_OK) {		
@@ -752,7 +752,7 @@ static uint32_t i2c_read(uint8_t port, uint8_t addr, uint8_t reg, int len) {
 	else i2c_master_read_byte(cmd, (uint8_t*) &data, I2C_MASTER_NACK);
 		
     i2c_master_stop(cmd);
-    esp_err_t ret = i2c_master_cmd_begin(port, cmd, 100 / portTICK_RATE_MS);
+    esp_err_t ret = i2c_master_cmd_begin(port, cmd, 100 / portTICK_PERIOD_MS);
     i2c_cmd_link_delete(cmd);
 	
 	if (ret != ESP_OK) {
