@@ -4,7 +4,7 @@ set(CMAKE_CXX_STANDARD 20)
 idf_component_register(
 		SRC_DIRS . 
 		INCLUDE_DIRS . "cspot/include"
-		PRIV_REQUIRES mbedtls mdns nvs_flash platform_config services esp_http_server tools codecs
+		PRIV_REQUIRES mbedtls mdns nvs_flash platform_config services esp_event esp_http_server tools codecs
 		LDFRAGMENTS "linker.lf"
 )
 
