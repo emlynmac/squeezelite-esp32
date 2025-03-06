@@ -27,7 +27,7 @@
 #include <stdarg.h>
 #include "esp_secure_boot.h"
 #include "esp_flash_encrypt.h"
-#include "esp_spi_flash.h"
+#include "spi_flash_mmap.h"
 #include "sdkconfig.h"
 #include "messaging.h"
 #include "esp_ota_ops.h"
@@ -286,6 +286,9 @@ esp_err_t _http_event_handler(esp_http_client_event_t *evt)
 //	char *header_value For HTTP_EVENT_ON_HEADER event_id, it�s store current http header value
 // --------------
     switch (evt->event_id) {
+	case HTTP_EVENT_REDIRECT:
+		ESP_LOGD(TAG, "HTTP_EVENT_REDIRECT");
+		break;
     case HTTP_EVENT_ERROR:
         ESP_LOGD(TAG, "HTTP_EVENT_ERROR");
         _printMemStats();
@@ -406,7 +409,7 @@ esp_err_t _erase_last_boot_app_partition(const esp_partition_t *ota_partition)
     char * ota_erase_size=config_alloc_get(NVS_TYPE_STR, "ota_erase_blk");
 	if(ota_erase_size!=NULL) {
 		single_pass_size = atol(ota_erase_size);
-		ESP_LOGD(TAG,"OTA Erase block size is %d (from string: %s)",single_pass_size, ota_erase_size );
+		ESP_LOGD(TAG,"OTA Erase block size is %ld (from string: %s)",single_pass_size, ota_erase_size );
 		free(ota_erase_size);
 	}
 	else {
@@ -416,16 +419,16 @@ esp_err_t _erase_last_boot_app_partition(const esp_partition_t *ota_partition)
 
 	if(single_pass_size % SPI_FLASH_SEC_SIZE !=0){
 		uint32_t temp_single_pass_size = single_pass_size-(single_pass_size % SPI_FLASH_SEC_SIZE);
-		ESP_LOGW(TAG,"Invalid erase block size of %u. Value should be a multiple of %d and will be adjusted to %u.", single_pass_size, SPI_FLASH_SEC_SIZE,temp_single_pass_size);
+		ESP_LOGW(TAG,"Invalid erase block size of %lu. Value should be a multiple of %d and will be adjusted to %lu.", single_pass_size, SPI_FLASH_SEC_SIZE,temp_single_pass_size);
 		single_pass_size=temp_single_pass_size;
 	}
-	ESP_LOGD(TAG,"Erasing flash partition of size %u in blocks of %d bytes", ota_partition->size, single_pass_size);
+	ESP_LOGD(TAG,"Erasing flash partition of size %lu in blocks of %ld bytes", ota_partition->size, single_pass_size);
 	num_passes=ota_partition->size/single_pass_size;
 	remain_size=ota_partition->size-(num_passes*single_pass_size);
-	ESP_LOGI(TAG,"Erasing in %d passes with blocks of %d bytes ", num_passes,single_pass_size);
+	ESP_LOGI(TAG,"Erasing in %d passes with blocks of %ld bytes ", num_passes,single_pass_size);
 	for(uint16_t i=0;i<num_passes;i++){
 		ESP_LOGD(TAG,"Erasing flash (%u%%)",i/num_passes);
-		ESP_LOGD(TAG,"Pass %d of %d, with chunks of %d bytes, from %d to %d", i+1, num_passes,single_pass_size,i*single_pass_size,i*single_pass_size+single_pass_size);
+		ESP_LOGD(TAG,"Pass %d of %d, with chunks of %ld bytes, from %ld to %ld", i+1, num_passes,single_pass_size,i*single_pass_size,i*single_pass_size+single_pass_size);
 		err=esp_partition_erase_range(ota_partition, i*single_pass_size, single_pass_size);
 		if(err!=ESP_OK) return err;
 		if(i%2) {
@@ -518,7 +521,7 @@ esp_err_t ota_header_check(){
     ota_status->last_invalid_app= esp_ota_get_last_invalid_partition();
     ota_status->ota_partition = _get_ota_partition(ESP_PARTITION_SUBTYPE_APP_OTA_0);
 
-    ESP_LOGD(TAG, "Running partition [%s] type %d subtype %d (offset 0x%08x)", ota_status->running->label, ota_status->running->type, ota_status->running->subtype, ota_status->running->address);
+    ESP_LOGD(TAG, "Running partition [%s] type %d subtype %d (offset 0x%08x)", ota_status->running->label, ota_status->running->type, ota_status->running->subtype, (unsigned int)ota_status->running->address);
     if (ota_status->total_image_len > ota_status->ota_partition->size){
     	ota_task_cleanup("Error: Image size (%d) too large to fit in partition (%d).",ota_status->ota_partition->size,ota_status->total_image_len );
         return ESP_FAIL;
@@ -529,11 +532,11 @@ esp_err_t ota_header_check(){
         return ESP_FAIL;
 	}
     if (ota_status->configured != ota_status->running) {
-        ESP_LOGW(TAG, "Configured OTA boot partition at offset 0x%08x, but running from offset 0x%08x", ota_status->configured->address, ota_status->running->address);
+        ESP_LOGW(TAG, "Configured OTA boot partition at offset 0x%08x, but running from offset 0x%08x", (unsigned int)ota_status->configured->address, (unsigned int)ota_status->running->address);
         ESP_LOGW(TAG, "(This can happen if either the OTA boot data or preferred boot image become corrupted somehow.)");
     }
     ESP_LOGD(TAG, "Next ota update partition is: [%s] subtype %d at offset 0x%x",
-    		ota_status->update_partition->label, ota_status->update_partition->subtype, ota_status->update_partition->address);
+    		ota_status->update_partition->label, ota_status->update_partition->subtype, (unsigned int)ota_status->update_partition->address);
 
     if (ota_status->total_image_len >= IMAGE_HEADER_SIZE) {
 		// check current version with downloading
@@ -638,7 +641,7 @@ void ota_task(void *pvParameter)
 				loc_displayer_progressbar(ota_status->newpct);
 				gettimeofday(&tv, NULL);
 				uint32_t elapsed_ms= (tv.tv_sec-ota_status->OTA_start.tv_sec )*1000+(tv.tv_usec-ota_status->OTA_start.tv_usec)/1000;
-				ESP_LOGI(TAG,"OTA progress : %d/%.0f (%d pct), %d KB/s", ota_status->actual_image_len, ota_status->total_image_len, ota_status->newpct, elapsed_ms>0?ota_status->actual_image_len*1000/elapsed_ms/1024:0);
+				ESP_LOGI(TAG,"OTA progress : %d/%.0f (%d pct), %ld KB/s", ota_status->actual_image_len, ota_status->total_image_len, ota_status->newpct, elapsed_ms>0?ota_status->actual_image_len*1000/elapsed_ms/1024:0);
 				sendMessaging(MESSAGING_INFO,"Writing binary file %3d %%.",ota_status->newpct);
 				ota_status->lastpct=ota_status->newpct;
 			}
