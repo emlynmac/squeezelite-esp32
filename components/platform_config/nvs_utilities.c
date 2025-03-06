@@ -116,7 +116,7 @@ esp_err_t nvs_load_config() {
         ESP_LOGW(TAG, "empty nvs partition %s, namespace %s", settings_partition, current_namespace);
     }
 
-    while (it != NULL) {
+    while (err == ESP_OK && it != NULL) {
 		nvs_entry_info_t info;
         nvs_entry_info(it, &info);
 
@@ -131,7 +131,7 @@ esp_err_t nvs_load_config() {
                     if ((err = nvs_erase_key(nvs_handle, info.key)) != ESP_OK) {
                         ESP_LOGE(TAG, "nvs_erase_key failed. %s", esp_err_to_name(err));
                     } else {
-                        nvs_commit(nvs_handle);
+                        err = nvs_commit(nvs_handle);
                     }
                     nvs_close(nvs_handle);
                     if (err == ESP_OK) {
@@ -143,21 +143,22 @@ esp_err_t nvs_load_config() {
                     ESP_LOGW(TAG, "nvs_erase_key failed on empty key. Configuration partition should be erased.  %s", esp_err_to_name(err));
                     err = ESP_OK;
                 }
-            }
+            } // End remove empty key
 			else {
+				// Non-empty key found, copy to JSON
 				void* value = get_nvs_value_alloc(info.type, info.key);
 				if (value == NULL) {
 					ESP_LOGE(TAG, "nvs read failed.");
 					return ESP_FAIL;
 				}
-				config_set_value(info.type, info.key, value);
+				err = config_set_value(info.type, info.key, value);
 				free(value);
 			}
         }
-        it = nvs_entry_next(it);
+		err = nvs_entry_next(&it);
     }
 	nvs_release_iterator(it);
-	
+
     char* json_string = config_alloc_get_json(false);
     if (json_string != NULL) {
         ESP_LOGD(TAG, "config json : %s\n", json_string);

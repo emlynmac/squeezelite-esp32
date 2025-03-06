@@ -465,9 +465,15 @@ static int wifi_erase_config(int argc, char **argv)
 
 static int list(const char *part, const char *name, const char *str_type)
 {
+    esp_err_t err = ESP_OK;
     nvs_type_t type = str_to_type(str_type);
 
-    nvs_iterator_t it = nvs_entry_find(part, NULL, type);
+    nvs_iterator_t it = NULL;
+    err = nvs_entry_find(part, NULL, type, &it);
+    if (err != ESP_OK) {
+        log_send_messaging(MESSAGING_ERROR, "Error %s", esp_err_to_name(err));
+        return 1;
+    }
     if (it == NULL) {
     	log_send_messaging(MESSAGING_ERROR, "No such enty was found");
         return 1;
@@ -475,13 +481,14 @@ static int list(const char *part, const char *name, const char *str_type)
 
     do {
         nvs_entry_info_t info;
-        nvs_entry_info(it, &info);
-        it = nvs_entry_next(it);
+        err = nvs_entry_info(it, &info);
 
         log_send_messaging(MESSAGING_INFO, "namespace '%s', key '%s', type '%s' \n",
                info.namespace_name, info.key, type_to_str(info.type));
+        err = nvs_entry_next(&it);
     } while (it != NULL);
-
+    
+    nvs_release_iterator(it);
     return 0;
 }
 static int list_entries(int argc, char **argv)
