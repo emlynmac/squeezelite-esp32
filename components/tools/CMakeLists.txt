@@ -1,5 +1,5 @@
 idf_component_register( SRCS operator.cpp tools.c trace.c
-						REQUIRES esp_common pthread 
+						REQUIRES driver esp_common pthread 
 						PRIV_REQUIRES esp_http_client esp-tls
 						INCLUDE_DIRS .
 )
