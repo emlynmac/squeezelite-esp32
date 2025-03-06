@@ -27,6 +27,7 @@ Copyright (c) 2017-2021 Sebastien L
 #include "network_wifi.h"
 #include "network_status.h"
 #include "tools.h"
+#include "esp_netif.h"
 
 #define HTTP_STACK_SIZE	(5*1024)
 const char str_na[]="N/A";
