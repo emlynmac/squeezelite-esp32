@@ -1,9 +1,9 @@
 #include "esp_eth.h"
 #include "network_ethernet.h"
 
-static EXT_RAM_ATTR network_ethernet_driver_t LAN8720;
-static EXT_RAM_ATTR esp_netif_config_t cfg_rmii;
-static EXT_RAM_ATTR esp_netif_inherent_config_t esp_netif_config;
+static EXT_RAM_BSS_ATTR network_ethernet_driver_t LAN8720;
+static EXT_RAM_BSS_ATTR esp_netif_config_t cfg_rmii;
+static EXT_RAM_BSS_ATTR esp_netif_inherent_config_t esp_netif_config;
 
 static esp_err_t start(spi_device_handle_t spi_handle, eth_config_t* ethernet_config) {
 #ifdef CONFIG_ETH_PHY_INTERFACE_RMII

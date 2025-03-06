@@ -18,7 +18,7 @@
 
 static log_level loglevel = lINFO;
 
-static EXT_RAM_ATTR struct {
+static EXT_RAM_BSS_ATTR struct {
 	void *handle;
     float loudness, volume;
     uint32_t samplerate;

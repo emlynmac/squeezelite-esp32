@@ -1,10 +1,10 @@
 #include "esp_eth.h"
 #include "network_ethernet.h"
 
-static EXT_RAM_ATTR network_ethernet_driver_t DM9051;
-static EXT_RAM_ATTR spi_device_interface_config_t devcfg;
-static EXT_RAM_ATTR esp_netif_config_t cfg_spi;
-static EXT_RAM_ATTR esp_netif_inherent_config_t esp_netif_config;
+static EXT_RAM_BSS_ATTR network_ethernet_driver_t DM9051;
+static EXT_RAM_BSS_ATTR spi_device_interface_config_t devcfg;
+static EXT_RAM_BSS_ATTR esp_netif_config_t cfg_spi;
+static EXT_RAM_BSS_ATTR esp_netif_inherent_config_t esp_netif_config;
 
 static esp_err_t start(spi_device_handle_t spi_handle, eth_config_t* ethernet_config) {
 #ifdef CONFIG_ETH_SPI_ETHERNET_DM9051

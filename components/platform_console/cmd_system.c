@@ -38,11 +38,11 @@
 #else 
 #pragma message("Runtime stats disabled")
 #endif
-EXT_RAM_ATTR static struct {
+EXT_RAM_BSS_ATTR static struct {
 	struct arg_str *name;
 	struct arg_end *end;
 } name_args;
-EXT_RAM_ATTR static struct {
+EXT_RAM_BSS_ATTR static struct {
     #if CONFIG_CSPOT_SINK	
     struct arg_lit *cspot;
     #endif     

@@ -190,7 +190,7 @@ static struct {
 
 #define MAX_BARS	48
 #define VISU_ESP32	0x10
-static EXT_RAM_ATTR struct {
+static EXT_RAM_BSS_ATTR struct {
 	int bar_gap, bar_width, bar_border;
 	bool rotate;
 	struct bar_s {
@@ -209,19 +209,19 @@ static EXT_RAM_ATTR struct {
 
 static uint8_t* led_data;
 
-static EXT_RAM_ATTR struct {
+static EXT_RAM_BSS_ATTR struct {
 	float fft[FFT_LEN*2], samples[FFT_LEN*2], hanning[FFT_LEN];
 	int levels[2];
 } meters;
 
-static EXT_RAM_ATTR struct {
+static EXT_RAM_BSS_ATTR struct {
 	int mode;
 	int n, style, max, gain;
 	u16_t config;
 	struct bar_s bars[MAX_BARS] ;
 } led_visu;
 
-static EXT_RAM_ATTR uint8_t vu_bitmap[VU_WIDTH * VU_HEIGHT];
+static EXT_RAM_BSS_ATTR uint8_t vu_bitmap[VU_WIDTH * VU_HEIGHT];
 extern const uint8_t vu_base[] asm("_binary_vu_s_data_start");
 extern const struct {
 	uint8_t offset;
@@ -320,7 +320,7 @@ static void displayer_task(void* arg);
  */
 bool sb_displayer_init(void) {
 	static DRAM_ATTR StaticTask_t xTaskBuffer __attribute__ ((aligned (4)));
-	static EXT_RAM_ATTR StackType_t xStack[SCROLL_STACK_SIZE] __attribute__ ((aligned (4)));
+	static EXT_RAM_BSS_ATTR StackType_t xStack[SCROLL_STACK_SIZE] __attribute__ ((aligned (4)));
 	
 	// no display, just make sure we won't have requests
 	if ((GDS_GetWidth(display) <= 0 || GDS_GetHeight(display) <= 0) && !led_display) {

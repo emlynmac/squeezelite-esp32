@@ -121,7 +121,7 @@ static void set_i2s_pin(char *config, i2s_pin_config_t *pin_config) {
  * Get i2s config structure from config string
  */
 const i2s_platform_config_t * config_i2s_get_from_str(char * dac_config ){
-	static EXT_RAM_ATTR i2s_platform_config_t i2s_dac_pin;
+	static EXT_RAM_BSS_ATTR i2s_platform_config_t i2s_dac_pin;
 	memset(&i2s_dac_pin, 0xff, sizeof(i2s_dac_pin));
 	set_i2s_pin(dac_config, &i2s_dac_pin.pin);
 	strcpy(i2s_dac_pin.model, "i2s");
@@ -144,7 +144,7 @@ const i2s_platform_config_t * config_i2s_get_from_str(char * dac_config ){
  * Get eth config structure from config string
  */
 const eth_config_t * config_eth_get_from_str(char* config ){
-	static EXT_RAM_ATTR eth_config_t eth_config; 
+	static EXT_RAM_BSS_ATTR eth_config_t eth_config; 
 	eth_config.rst = eth_config.intr = -1;
 
 	PARSE_PARAM_STR(config, "model", '=', eth_config.model, 15);
@@ -204,7 +204,7 @@ const eth_config_t * config_eth_get_from_str(char* config ){
  */
 const i2s_platform_config_t * config_spdif_get( ){
 	char * spdif_config = config_spdif_get_string();
-	static EXT_RAM_ATTR i2s_platform_config_t i2s_dac_config;
+	static EXT_RAM_BSS_ATTR i2s_platform_config_t i2s_dac_config;
 	memcpy(&i2s_dac_config, config_i2s_get_from_str(spdif_config), sizeof(i2s_dac_config));
 	free(spdif_config);
 	return &i2s_dac_config;
@@ -215,7 +215,7 @@ const i2s_platform_config_t * config_spdif_get( ){
  */
 const i2s_platform_config_t * config_dac_get(){
 	char * spdif_config = get_dac_config_string();
-	static EXT_RAM_ATTR i2s_platform_config_t i2s_dac_config;
+	static EXT_RAM_BSS_ATTR i2s_platform_config_t i2s_dac_config;
 	memcpy(&i2s_dac_config, config_i2s_get_from_str(spdif_config), sizeof(i2s_dac_config));
 	free(spdif_config);
 	return &i2s_dac_config;
@@ -248,7 +248,7 @@ const eth_config_t * config_eth_get( ){
 	if(config && strlen(config)>0){
 		ESP_LOGD(TAG,"Parsing ethernet configuration %s", config);
 	}
-	static EXT_RAM_ATTR eth_config_t eth_config;
+	static EXT_RAM_BSS_ATTR eth_config_t eth_config;
 	memcpy(&eth_config, config_eth_get_from_str(config), sizeof(eth_config));
 	FREE_AND_NULL(config);
 	return &eth_config;

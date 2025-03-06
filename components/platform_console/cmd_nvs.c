@@ -35,37 +35,37 @@ extern esp_err_t network_wifi_erase_known_ap();
 static const char *ARG_TYPE_STR = "type can be: i8, u8, i16, u16 i32, u32 i64, u64, str, blob";
 static const char * TAG = "cmd_nvs";
 
-EXT_RAM_ATTR static struct {
+EXT_RAM_BSS_ATTR static struct {
     struct arg_str *key;
     struct arg_str *type;
     struct arg_str *value;
     struct arg_end *end;
 } set_args;
 
-EXT_RAM_ATTR static struct {
+EXT_RAM_BSS_ATTR static struct {
     struct arg_str *key;
     struct arg_str *type;
     struct arg_end *end;
 } get_args;
 
-EXT_RAM_ATTR static struct {
+EXT_RAM_BSS_ATTR static struct {
     struct arg_str *key;
     struct arg_end *end;
 } erase_args;
 
-EXT_RAM_ATTR static struct {
+EXT_RAM_BSS_ATTR static struct {
     struct arg_str *namespace;
     struct arg_end *end;
 } erase_all_args;
 
-EXT_RAM_ATTR static struct {
+EXT_RAM_BSS_ATTR static struct {
     struct arg_str *partition;
     struct arg_str *namespace;
     struct arg_str *type;
     struct arg_end *end;
 } list_args;
 
-EXT_RAM_ATTR static struct {
+EXT_RAM_BSS_ATTR static struct {
     struct arg_lit *legacy;
     struct arg_lit *ap_list;
     struct arg_end *end;

@@ -43,13 +43,13 @@
 #define CONFIG_COMMIT_DELAY 1000
 #define LOCK_MAX_WAIT 20*CONFIG_COMMIT_DELAY
 static const char * TAG = "config";
-EXT_RAM_ATTR static cJSON * nvs_json=NULL;
-EXT_RAM_ATTR static TimerHandle_t timer;
-EXT_RAM_ATTR static SemaphoreHandle_t config_mutex = NULL;
-EXT_RAM_ATTR static EventGroupHandle_t config_group;
+EXT_RAM_BSS_ATTR static cJSON * nvs_json=NULL;
+EXT_RAM_BSS_ATTR static TimerHandle_t timer;
+EXT_RAM_BSS_ATTR static SemaphoreHandle_t config_mutex = NULL;
+EXT_RAM_BSS_ATTR static EventGroupHandle_t config_group;
 /* @brief indicate that the ESP32 is currently connected. */
-EXT_RAM_ATTR static const int CONFIG_NO_COMMIT_PENDING = BIT0;
-EXT_RAM_ATTR static const int CONFIG_LOAD_BIT = BIT1;
+EXT_RAM_BSS_ATTR static const int CONFIG_NO_COMMIT_PENDING = BIT0;
+EXT_RAM_BSS_ATTR static const int CONFIG_LOAD_BIT = BIT1;
 
 bool config_lock(TickType_t xTicksToWait);
 void config_unlock();

@@ -69,12 +69,12 @@ static const char * actrls_action_s[ ] = { EP(ACTRLS_POWER),EP(ACTRLS_VOLUP),EP(
 static const char * TAG = "audio controls";
 static actrls_config_t *json_config;
 cJSON * control_profiles = NULL;
-static EXT_RAM_ATTR actrls_t default_controls, current_controls;
+static EXT_RAM_BSS_ATTR actrls_t default_controls, current_controls;
 static actrls_hook_t *default_hook, *current_hook;
 static bool default_raw_controls, current_raw_controls;
 static actrls_ir_handler_t *default_ir_handler, *current_ir_handler;
 
-static EXT_RAM_ATTR struct {
+static EXT_RAM_BSS_ATTR struct {
 	bool long_state;
 	bool volume_lock;
 	TimerHandle_t timer;

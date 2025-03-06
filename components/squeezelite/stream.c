@@ -59,9 +59,9 @@ is enough and much faster than a mutex
 static bool polling;
 static sockfd fd;
 
-struct EXT_RAM_ATTR streamstate stream;
+struct EXT_RAM_BSS_ATTR streamstate stream;
 
-static EXT_RAM_ATTR struct {
+static EXT_RAM_BSS_ATTR struct {
     bool flac;
     u64_t serial;
 	enum { OGG_OFF, OGG_SYNC, OGG_HEADER, OGG_SEGMENTS, OGG_PAGE } state;

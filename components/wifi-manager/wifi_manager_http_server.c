@@ -37,10 +37,10 @@
 #include "tools.h"
 static const char TAG[] = "http_server";
 
-EXT_RAM_ATTR static httpd_handle_t _server;
-EXT_RAM_ATTR static int _port;
-EXT_RAM_ATTR rest_server_context_t *rest_context;
-EXT_RAM_ATTR RingbufHandle_t messaging;
+EXT_RAM_BSS_ATTR static httpd_handle_t _server;
+EXT_RAM_BSS_ATTR static int _port;
+EXT_RAM_BSS_ATTR rest_server_context_t *rest_context;
+EXT_RAM_BSS_ATTR RingbufHandle_t messaging;
 
 httpd_handle_t http_get_server(int *port) {
 	if (port) *port = _port;

@@ -71,7 +71,7 @@ typedef struct known_access_point {
 } known_access_point_t;
 
 /** linked list of command structures */
-static EXT_RAM_ATTR SLIST_HEAD(ap_list, known_access_point) s_ap_list;
+static EXT_RAM_BSS_ATTR SLIST_HEAD(ap_list, known_access_point) s_ap_list;
 known_access_point_t* network_wifi_get_ap_entry(const char* ssid) {
     known_access_point_t* it;
 
