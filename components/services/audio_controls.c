@@ -335,7 +335,7 @@ static void volume_rotary_handler(void *client, rotary_event_e event, bool long_
 /****************************************************************************************
  * 
  */
-static void rotary_timer( TimerHandle_t xTimer ) {
+static void rotary_timer(TimerHandle_t xTimer) {
 	if (rotary.click_pending) {
 		(*current_controls[KNOB_PUSH])(true);
 		rotary.click_pending = false;

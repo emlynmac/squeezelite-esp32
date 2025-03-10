@@ -1037,7 +1037,7 @@ static state_machine_result_t WIFI_LOST_CONNECTION_STATE_entry_handler(state_mac
         nm->total_connected_time += ((esp_timer_get_time() - nm->last_connected) / (1000 * 1000));
     nm->last_connected = 0;
     nm->num_disconnect++;
-    ESP_LOGW(TAG, " Wifi disconnected. Number of disconnects: %d, Average time connected: %d", nm->num_disconnect, nm->num_disconnect > 0 ? (nm->total_connected_time / nm->num_disconnect) : 0);
+    ESP_LOGW(TAG, " Wifi disconnected. Number of disconnects: %d, Average time connected: %ld", nm->num_disconnect, nm->num_disconnect > 0 ? (nm->total_connected_time / nm->num_disconnect) : 0);
     if (nm->retries < WIFI_MANAGER_MAX_RETRY) {
         nm->retries++;
         ESP_LOGD(TAG, " Retrying connection connection, %d/%d.", nm->retries, WIFI_MANAGER_MAX_RETRY);
@@ -1065,7 +1065,7 @@ static state_machine_result_t WIFI_LOST_CONNECTION_STATE_entry_handler(state_mac
 
             /* keep polling for existing connection */
             network_set_timer(nm->STA_duration, "Wifi Polling timeout");
-            ESP_LOGD(TAG, " STA search slow polling of %d", nm->STA_duration);
+            ESP_LOGD(TAG, " STA search slow polling of %ld", nm->STA_duration);
         }
     }
 

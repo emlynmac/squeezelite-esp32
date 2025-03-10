@@ -408,7 +408,7 @@ esp_err_t config_i2s_set(const i2s_platform_config_t * config, const char * nvs_
 	char * config_buffer=malloc_init_external(buffer_size);
 	char * config_buffer2=malloc_init_external(buffer_size);
 	if(config_buffer && config_buffer2)  {
-		snprintf(config_buffer,buffer_size,"model=%s,bck=%u,ws=%u,do=%u",config->model,config->pin.bck_io_num,config->pin.ws_io_num,config->pin.data_out_num);
+		snprintf(config_buffer,buffer_size,"model=%s,bck=%u,ws=%u,do=%u",config->model,config->pin.bclk,config->pin.ws,config->pin.dout);
 		if(config->mute_gpio>=0){
 			snprintf(config_buffer2,buffer_size,"%s,mute=%u:%u",config_buffer,config->mute_gpio,config->mute_level);
 			strcpy(config_buffer,config_buffer2);
@@ -443,7 +443,7 @@ esp_err_t config_spdif_set(const i2s_platform_config_t * config){
 	esp_err_t err=ESP_OK;
 	char * config_buffer=malloc_init_external(buffer_size);
 	if(config_buffer )  {
-		snprintf(config_buffer,buffer_size,"bck=%u,ws=%u,do=%u",config->pin.bck_io_num,config->pin.ws_io_num,config->pin.data_out_num);
+		snprintf(config_buffer,buffer_size,"bck=%u,ws=%u,do=%u",config->pin.bclk,config->pin.ws,config->pin.dout);
 		log_send_messaging(MESSAGING_INFO,"Updating SPDIF configuration to %s",config_buffer);
 		err = config_set_value(NVS_TYPE_STR, "spdif_config", config_buffer);
 		if(err!=ESP_OK){
@@ -835,10 +835,10 @@ cJSON * get_DAC_GPIO(cJSON * list){
 		llist = cJSON_CreateArray();
 	}	
 	const i2s_platform_config_t * i2s_config= config_dac_get();
-	if(i2s_config->pin.bck_io_num>=0){
-		cJSON_AddItemToArray(llist,get_gpio_entry("bck","dac",i2s_config->pin.bck_io_num,is_dac_config_locked()));
-		cJSON_AddItemToArray(llist,get_gpio_entry("ws","dac",i2s_config->pin.ws_io_num,is_dac_config_locked()));
-		cJSON_AddItemToArray(llist,get_gpio_entry("do","dac",i2s_config->pin.data_out_num,is_dac_config_locked()));
+	if(i2s_config->pin.bclk>=0){
+		cJSON_AddItemToArray(llist,get_gpio_entry("bck","dac",i2s_config->pin.bclk,is_dac_config_locked()));
+		cJSON_AddItemToArray(llist,get_gpio_entry("ws","dac",i2s_config->pin.ws,is_dac_config_locked()));
+		cJSON_AddItemToArray(llist,get_gpio_entry("do","dac",i2s_config->pin.dout,is_dac_config_locked()));
 		if(i2s_config->sda>=0){
 			cJSON_AddItemToArray(llist,get_gpio_entry("sda","dac",i2s_config->sda,is_dac_config_locked()));
 			cJSON_AddItemToArray(llist,get_gpio_entry("scl","dac",i2s_config->scl,is_dac_config_locked()));

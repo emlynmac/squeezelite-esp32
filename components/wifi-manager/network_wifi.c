@@ -3,6 +3,7 @@
 #endif
 #include "network_wifi.h"
 #include <string.h>
+#include "sys/queue.h"
 #include "cJSON.h"
 #include "dns_server.h"
 #include "esp_event.h"
@@ -113,7 +114,7 @@ const wifi_sta_config_t* network_wifi_get_active_config() {
     static wifi_config_t config;
     esp_err_t err = ESP_OK;
     memset(&config, 0x00, sizeof(config));
-    if ((err = esp_wifi_get_config(WIFI_IF_STA, &config)) == ESP_OK) {
+    if ((err = esp_wifi_get_config(ESP_IF_WIFI_STA, &config)) == ESP_OK) {
         return &config.sta;
     } else {
         ESP_LOGD(TAG, "Could not get wifi STA config: %s", esp_err_to_name(err));
@@ -196,7 +197,7 @@ esp_err_t network_wifi_add_ap_from_sta_copy(const wifi_sta_config_t* sta) {
         ESP_LOGE(TAG, "Invalid access point entry");
         return ESP_ERR_INVALID_ARG;
     }
-    if (!sta->ssid || strlen((char*)sta->ssid) == 0) {
+    if (strlen((const char*)(sta->ssid)) == 0) {
         ESP_LOGE(TAG, "Invalid access point ssid");
         return ESP_ERR_INVALID_ARG;
     }
@@ -567,14 +568,15 @@ esp_err_t network_wifi_save_sta_config() {
 }
 
 void network_wifi_load_known_access_points() {
-    esp_err_t esp_err;
+    esp_err_t esp_err = ESP_OK;
+    nvs_iterator_t it = NULL;
     size_t size = 0;
     if (network_wifi_get_known_count() > 0) {
         ESP_LOGW(TAG, "Access points already loaded");
         return;
     }
-    nvs_iterator_t it = nvs_entry_find(NVS_DEFAULT_PART_NAME, ap_list_nsv_namespace, NVS_TYPE_ANY);
-    if (it == NULL) {
+    esp_err = nvs_entry_find(NVS_DEFAULT_PART_NAME, ap_list_nsv_namespace, NVS_TYPE_ANY, &it);
+    if (esp_err != ESP_OK || it == NULL) {
         ESP_LOGW(TAG, "No known access point found");
         return;
     }
@@ -590,8 +592,8 @@ void network_wifi_load_known_access_points() {
             }
             FREE_AND_NULL(value);
         }
-        it = nvs_entry_next(it);
-    } while (it != NULL);
+        esp_err = nvs_entry_next(&it);
+    } while (esp_err != ESP_OK && it != NULL);
 
     return;
 }
@@ -889,7 +891,7 @@ esp_netif_t* network_wifi_config_ap() {
     network_start_stop_dhcps(wifi_ap_netif, false);
     ESP_LOGD(TAG, "Setting tcp_ip info for access point");
     if ((err = esp_netif_set_ip_info(wifi_ap_netif, &info)) != ESP_OK) {
-        ESP_LOGE(TAG, "Setting tcp_ip info for interface TCPIP_ADAPTER_IF_AP. Error %s", esp_err_to_name(err));
+        ESP_LOGE(TAG, "Setting tcp_ip info for interface ap_netif. Error %s", esp_err_to_name(err));
         return wifi_ap_netif;
     }
     network_start_stop_dhcps(wifi_ap_netif, true);
@@ -1158,7 +1160,7 @@ esp_err_t network_wifi_connect(const char* ssid, const char* password) {
     esp_wifi_disconnect();
 
     config.sta.scan_method = WIFI_ALL_CHANNEL_SCAN;
-    if ((err = esp_wifi_set_config(WIFI_IF_STA, &config)) != ESP_OK) {
+    if ((err = esp_wifi_set_config(ESP_IF_WIFI_STA, &config)) != ESP_OK) {
         ESP_LOGE(TAG, "Failed to set STA configuration. Error %s", esp_err_to_name(err));
     }
     if (err == ESP_OK) {

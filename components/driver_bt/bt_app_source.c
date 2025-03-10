@@ -406,7 +406,7 @@ int heart_beat_delay[] = {
     1000
 };
 
-static void a2d_app_heart_beat(void *arg)
+static void a2d_app_heart_beat(TimerHandle_t xTimer)
 {
     bt_app_work_dispatch(bt_app_av_sm_hdlr, BT_APP_HEART_BEAT_EVT, NULL, 0, NULL);
     int tmrduration=heart_beat_delay[bt_app_source_a2d_state];

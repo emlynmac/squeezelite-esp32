@@ -30,7 +30,6 @@
 
 #include "messaging.h"
 
-#include "config.h"
 static pthread_t thread_console;
 static void * console_thread();
 void console_start();

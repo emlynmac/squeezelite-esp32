@@ -113,7 +113,7 @@ static void set_level(struct led_s *led, bool on) {
 /****************************************************************************************
  *
  */
-static void vCallbackFunction( TimerHandle_t xTimer ) {
+static void vCallbackFunction(TimerHandle_t xTimer) {
 	struct led_s *led = (struct led_s*) pvTimerGetTimerID (xTimer);
 
 	if (!led->timer) return;

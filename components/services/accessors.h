@@ -10,7 +10,8 @@
 
 #include "esp_system.h"
 #include "driver/i2c.h"
-#include "driver/i2s.h"
+#include "driver/i2s_std.h"
+#include "driver/i2s_types.h"
 #include "driver/spi_master.h"
 #include "gpio_exp.h"
 #include "cJSON.h"
@@ -49,7 +50,7 @@ typedef struct eth_config_struct {
 } eth_config_t;
 
 typedef struct {
-	i2s_pin_config_t pin;
+	i2s_std_gpio_config_t pin;
 	char model[32];
 	int mute_gpio;
 	int mute_level;

@@ -3,6 +3,7 @@
 #include "network_manager.h"
 #include "accessors.h"
 #include <string.h>
+#include "esp_eth.h"
 #include "esp_netif_defaults.h"
 #ifdef __cplusplus
 extern "C" {

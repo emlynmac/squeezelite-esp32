@@ -513,9 +513,9 @@ static int do_spdif_cmd(int argc, char **argv) {
         fclose(f);
         return 1;
     }
-    nerrors += is_output_gpio(spdif_args.clock, f, &i2s_dac_pin.pin.bck_io_num, true);
-    nerrors += is_output_gpio(spdif_args.wordselect, f, &i2s_dac_pin.pin.ws_io_num, true);
-    nerrors += is_output_gpio(spdif_args.data, f, &i2s_dac_pin.pin.data_out_num, true);
+    nerrors += is_output_gpio(spdif_args.clock, f, &i2s_dac_pin.pin.bclk, true);
+    nerrors += is_output_gpio(spdif_args.wordselect, f, &i2s_dac_pin.pin.ws, true);
+    nerrors += is_output_gpio(spdif_args.data, f, &i2s_dac_pin.pin.dout, true);
     if (!nerrors) {
         fprintf(f, "Storing SPDIF parameters.\n");
         nerrors += (config_spdif_set(&i2s_dac_pin) != ESP_OK);
@@ -737,9 +737,9 @@ static int do_i2s_cmd(int argc, char **argv) {
     } else {
         strncpy(i2s_dac_pin.model, i2s_args.model_name->sval[0], sizeof(i2s_dac_pin.model));
         i2s_dac_pin.model[sizeof(i2s_dac_pin.model) - 1] = '\0';
-        nerrors += is_output_gpio(i2s_args.clock, f, &i2s_dac_pin.pin.bck_io_num, true);
-        nerrors += is_output_gpio(i2s_args.wordselect, f, &i2s_dac_pin.pin.ws_io_num, true);
-        nerrors += is_output_gpio(i2s_args.data, f, &i2s_dac_pin.pin.data_out_num, true);
+        nerrors += is_output_gpio(i2s_args.clock, f, &i2s_dac_pin.pin.bclk, true);
+        nerrors += is_output_gpio(i2s_args.wordselect, f, &i2s_dac_pin.pin.ws, true);
+        nerrors += is_output_gpio(i2s_args.data, f, &i2s_dac_pin.pin.dout, true);
         nerrors += is_output_gpio(i2s_args.mute_gpio, f, &i2s_dac_pin.mute_gpio, false);
         if (i2s_dac_pin.mute_gpio >= 0) {
             i2s_dac_pin.mute_level = i2s_args.mute_level->count > 0 ? 1 : 0;
@@ -837,14 +837,14 @@ cJSON *i2s_cb() {
     cJSON *values = cJSON_CreateObject();
 
     const i2s_platform_config_t *i2s_conf = config_dac_get();
-    if (i2s_conf->pin.bck_io_num > 0) {
-        cJSON_AddNumberToObject(values, i2s_args.clock->hdr.longopts, i2s_conf->pin.bck_io_num);
+    if (i2s_conf->pin.bclk > 0) {
+        cJSON_AddNumberToObject(values, i2s_args.clock->hdr.longopts, i2s_conf->pin.bclk);
     }
-    if (i2s_conf->pin.ws_io_num >= 0) {
-        cJSON_AddNumberToObject(values, i2s_args.wordselect->hdr.longopts, i2s_conf->pin.ws_io_num);
+    if (i2s_conf->pin.ws >= 0) {
+        cJSON_AddNumberToObject(values, i2s_args.wordselect->hdr.longopts, i2s_conf->pin.ws);
     }
-    if (i2s_conf->pin.data_out_num >= 0) {
-        cJSON_AddNumberToObject(values, i2s_args.data->hdr.longopts, i2s_conf->pin.data_out_num);
+    if (i2s_conf->pin.dout >= 0) {
+        cJSON_AddNumberToObject(values, i2s_args.data->hdr.longopts, i2s_conf->pin.dout);
     }
     if (i2s_conf->sda >= 0) {
         cJSON_AddNumberToObject(values, i2s_args.dac_sda->hdr.longopts, i2s_conf->sda);
@@ -872,14 +872,14 @@ cJSON *i2s_cb() {
 cJSON *spdif_cb() {
     cJSON *values = cJSON_CreateObject();
     const i2s_platform_config_t *spdif_conf = config_spdif_get();
-    if (spdif_conf->pin.bck_io_num > 0) {
-        cJSON_AddNumberToObject(values, "clock", spdif_conf->pin.bck_io_num);
+    if (spdif_conf->pin.bclk > 0) {
+        cJSON_AddNumberToObject(values, "clock", spdif_conf->pin.bclk);
     }
-    if (spdif_conf->pin.ws_io_num >= 0) {
-        cJSON_AddNumberToObject(values, "wordselect", spdif_conf->pin.ws_io_num);
+    if (spdif_conf->pin.ws >= 0) {
+        cJSON_AddNumberToObject(values, "wordselect", spdif_conf->pin.ws);
     }
-    if (spdif_conf->pin.data_out_num >= 0) {
-        cJSON_AddNumberToObject(values, "data", spdif_conf->pin.data_out_num);
+    if (spdif_conf->pin.dout >= 0) {
+        cJSON_AddNumberToObject(values, "data", spdif_conf->pin.dout);
     }
 
     return values;

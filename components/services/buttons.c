@@ -114,7 +114,7 @@ static void IRAM_ATTR gpio_isr_handler(void* arg)
 /****************************************************************************************
  * Buttons debounce/longpress timer
  */
-static void buttons_timer_handler( TimerHandle_t xTimer ) {
+static void buttons_timer_handler(TimerHandle_t xTimer) {
 	struct button_s *button = (struct button_s*) pvTimerGetTimerID (xTimer);
 	// if this is an expanded GPIO, must give cache a chance
 	buttons_handler(button, gpio_exp_get_level(button->gpio, (button->debounce * 3) / 2, NULL));
@@ -123,7 +123,7 @@ static void buttons_timer_handler( TimerHandle_t xTimer ) {
 /****************************************************************************************
  * Buttons polling timer
  */
-static void buttons_polling( TimerHandle_t xTimer ) {
+static void buttons_polling(TimerHandle_t xTimer) {
 	for (int i = 0; polled_gpio[i].gpio != -1; i++) {
 		if (!polled_gpio[i].button) continue;
 		

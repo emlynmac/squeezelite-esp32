@@ -439,7 +439,7 @@ static void IRAM_ATTR intr_isr_handler(void* arg) {
 /****************************************************************************************
  * INTR debounce handler
  */
-static void debounce_handler( TimerHandle_t xTimer ) {
+static void debounce_handler(TimerHandle_t xTimer) {
 	struct gpio_exp_isr_s *isr = (struct gpio_exp_isr_s*) pvTimerGetTimerID (xTimer);
 	isr->handler(isr->arg);
 }

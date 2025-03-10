@@ -162,7 +162,7 @@ static bool init(int i2c_port_num, int i2s_num, i2s_config_t* i2s_config) {
 
   // configure I2S pins & install driver
   i2s_pin_config_t i2s_pin_config = (i2s_pin_config_t){
-      .bck_io_num = 27, .ws_io_num = 26, .data_out_num = 25, .data_in_num = -1};
+      .bclk = 27, .ws = 26, .dout = 25, .data_in_num = -1};
   res |= i2s_driver_install(i2s_num, i2s_config, 0, NULL);
   res |= i2s_set_pin(i2s_num, &i2s_pin_config);
 
@@ -174,8 +174,8 @@ static bool init(int i2c_port_num, int i2s_num, i2s_config_t* i2s_config) {
   ac101_set_spk_volume(70);
   ac101_set_earph_volume(70);
 
-  ESP_LOGI(TAG, "DAC using I2S bck:%d, ws:%d, do:%d", i2s_pin_config.bck_io_num,
-           i2s_pin_config.ws_io_num, i2s_pin_config.data_out_num);
+  ESP_LOGI(TAG, "DAC using I2S bck:%d, ws:%d, do:%d", i2s_pin_config.bclk,
+           i2s_pin_config.ws, i2s_pin_config.dout);
 
   return (res == ESP_OK);
 }

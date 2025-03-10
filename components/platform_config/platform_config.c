@@ -492,7 +492,7 @@ void config_unlock() {
 	xSemaphoreGive( config_mutex );
 }
 
-static void vCallbackFunction( TimerHandle_t xTimer ) {
+static void vCallbackFunction(TimerHandle_t xTimer) {
 	static int cnt=0;
 	if(config_has_changes()){
 		ESP_LOGI(TAG, "configuration has some uncommitted entries");

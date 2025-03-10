@@ -10,7 +10,9 @@ Copyright (c) 2017-2021 Sebastien L
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "sys/queue.h"
 #include "network_ethernet.h"
+#include "esp_mac.h"
 #include "network_status.h"
 #include "network_wifi.h"
 
@@ -71,13 +73,13 @@ network_t NM;
 
 //! Create and initialize the array of state machines.
 state_machine_t* const SM[] = {(state_machine_t*)&NM};
-static void network_timer_cb(void* timer_id);
+static void network_timer_cb(TimerHandle_t xTimer);
 int get_root_id(const state_t *  state);
 const state_t* get_root( const state_t* const state);
 static void network_task(void* pvParameters);
 
 void network_start_stop_dhcp_client(esp_netif_t* netif, bool start) {
-    tcpip_adapter_dhcp_status_t status;
+    esp_netif_dhcp_status_t status;
     esp_err_t err = ESP_OK;
     ESP_LOGD(TAG, "Checking if DHCP client for STA interface is running");
     if (!netif) {
@@ -137,7 +139,7 @@ void network_start_stop_dhcp_client(esp_netif_t* netif, bool start) {
     }
 }
 void network_start_stop_dhcps(esp_netif_t* netif, bool start) {
-    tcpip_adapter_dhcp_status_t status;
+    esp_netif_dhcp_status_t status;
     esp_err_t err = ESP_OK;
     ESP_LOGD(TAG, "Checking if DHCP server is running");
     if (!netif) {
@@ -294,7 +296,7 @@ void network_start() {
 }
 
 static void event_logger(uint32_t state_machine, uint32_t state, uint32_t event) {
-    ESP_LOGD(TAG, "Handling network manager event state Id %d->[%s]", state, event_to_string(event));
+    ESP_LOGD(TAG, "Handling network manager event state Id %ld->[%s]", state, event_to_string(event));
 }
 static const char * get_state_machine_result_string(state_machine_result_t result) {
     switch(result) {
@@ -308,7 +310,7 @@ static const char * get_state_machine_result_string(state_machine_result_t resul
     return "Unknown";
 }
 static void result_logger(uint32_t state, state_machine_result_t result) {
-    ESP_LOGD(TAG, "Network Manager Result: %s, New State id: %d", get_state_machine_result_string(result) , state);
+    ESP_LOGD(TAG, "Network Manager Result: %s, New State id: %ld", get_state_machine_result_string(result) , state);
 }
 
 static void network_task(void* pvParameters) {
@@ -588,7 +590,7 @@ network_t* network_get_state_machine() {
     return &NM;
 }
 
-static void network_timer_cb(void* timer_id) {
+static void network_timer_cb(TimerHandle_t xTimer ) {
     network_async_timer();
 }
 esp_netif_t* network_get_active_interface() {
@@ -601,7 +603,7 @@ esp_netif_t* network_get_active_interface() {
 }
 bool network_is_interface_connected(esp_netif_t* interface) {
     esp_err_t err = ESP_OK;
-    tcpip_adapter_ip_info_t ipInfo;
+    esp_netif_ip_info_t ipInfo;
     if(!interface){
         return false;
     }
@@ -639,7 +641,7 @@ static esp_netif_t* get_connected_interface() {
     ESP_LOGD(TAG,"No connected interface found");
     return NULL;
 }
-esp_err_t network_get_ip_info_for_netif(esp_netif_t* netif, tcpip_adapter_ip_info_t* ipInfo) {
+esp_err_t network_get_ip_info_for_netif(esp_netif_t* netif, esp_netif_ip_info_t* ipInfo) {
     esp_netif_ip_info_t loc_ip_info;
     if (!ipInfo ) {
         ESP_LOGE(TAG, "Invalid pointer for ipInfo");
@@ -649,7 +651,7 @@ esp_err_t network_get_ip_info_for_netif(esp_netif_t* netif, tcpip_adapter_ip_inf
         ESP_LOGE(TAG, "Invalid pointer for netif");
         return ESP_ERR_INVALID_ARG;
     }
-    memset(ipInfo,0x00,sizeof(tcpip_adapter_ip_info_t));
+    memset(ipInfo,0x00,sizeof(esp_netif_ip_info_t));
     esp_err_t err= esp_netif_get_ip_info(netif, &loc_ip_info);
     if(err==ESP_OK){
         ip4_addr_set(&(ipInfo->ip),&loc_ip_info.ip);
@@ -658,7 +660,7 @@ esp_err_t network_get_ip_info_for_netif(esp_netif_t* netif, tcpip_adapter_ip_inf
     }
     return err;
 }
-esp_err_t network_get_ip_info(tcpip_adapter_ip_info_t* ipInfo) {
+esp_err_t network_get_ip_info(esp_netif_ip_info_t* ipInfo) {
     esp_netif_t* netif= get_connected_interface();
     if(netif){
         return network_get_ip_info_for_netif(netif,ipInfo);
