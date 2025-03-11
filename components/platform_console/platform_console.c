@@ -16,6 +16,7 @@
 #include "esp_console.h"
 #include "esp_vfs_dev.h"
 #include "driver/uart.h"
+#include "driver/uart_vfs.h"
 #include "linenoise/linenoise.h"
 #include "argtable3/argtable3.h"
 #include "nvs.h" 
@@ -282,9 +283,9 @@ static int stdin_dummy(const char * path, int flags, int mode) {	return 0; }
 
 void initialize_console() {
 	/* Minicom, screen, idf_monitor send CR when ENTER key is pressed (unused if we redirect stdin) */
-	esp_vfs_dev_uart_port_set_rx_line_endings(CONFIG_ESP_CONSOLE_UART_NUM, ESP_LINE_ENDINGS_CR);
+	uart_vfs_dev_port_set_rx_line_endings(CONFIG_ESP_CONSOLE_UART_NUM, ESP_LINE_ENDINGS_CR);
 	/* Move the caret to the beginning of the next line on '\n' */
-	esp_vfs_dev_uart_port_set_tx_line_endings(CONFIG_ESP_CONSOLE_UART_NUM, ESP_LINE_ENDINGS_CRLF);
+	uart_vfs_dev_port_set_rx_line_endings(CONFIG_ESP_CONSOLE_UART_NUM, ESP_LINE_ENDINGS_CRLF);
 
 	/* Configure UART. Note that REF_TICK is used so that the baud rate remains
 	 * correct while APB frequency is changing in light sleep mode.
@@ -299,7 +300,7 @@ void initialize_console() {
 	ESP_ERROR_CHECK( uart_driver_install(CONFIG_ESP_CONSOLE_UART_NUM, 256, 0, 3, &uart_queue, 0));
 	
 	/* Tell VFS to use UART driver */
-	esp_vfs_dev_uart_use_driver(CONFIG_ESP_CONSOLE_UART_NUM);
+	uart_vfs_dev_use_driver(CONFIG_ESP_CONSOLE_UART_NUM);
 		
 	/* re-direct stdin to our own driver so we can gather data from various sources */
 	stdin_redir.queue_set = xQueueCreateSet(2);
