@@ -49,7 +49,8 @@ static struct {
     struct arg_end *end;
 } join_args;
 
-
+// Ref to the interface from network_manager_handlers.c
+extern esp_netif_t *sta_netif;
 
 // todo: implement access point config - cmd_to_json(&i2cdetect_cmd);
 
@@ -100,6 +101,8 @@ static void initialise_wifi(void)
         return;
     }
     esp_netif_init();
+    sta_netif = esp_netif_create_default_wifi_sta();
+    assert(sta_netif);
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
     ESP_ERROR_CHECK( esp_wifi_init(&cfg) );
     ESP_ERROR_CHECK( esp_event_handler_register(WIFI_EVENT, WIFI_EVENT_STA_DISCONNECTED, &event_handler, NULL) );

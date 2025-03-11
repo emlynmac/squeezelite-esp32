@@ -65,7 +65,7 @@ typedef void (*network_status_reached_cb)(nm_state_t state_id, int sub_state);
 esp_err_t network_register_state_callback(nm_state_t state, int sub_state, const char* from, network_status_reached_cb cb);
 esp_netif_t * network_get_active_interface();
 esp_err_t network_get_hostname(const char **hostname);
-esp_err_t network_get_ip_info(tcpip_adapter_ip_info_t* ipInfo);
+esp_err_t network_get_ip_info(esp_netif_ip_info_t* ipInfo);
 
 #ifdef __cplusplus
 }

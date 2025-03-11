@@ -25,6 +25,7 @@
 
 #include "esp_event.h"
 #include "esp_ota_ops.h"
+#include "esp_timer.h"
 #include "esp_wifi.h"
 #include "esp_wifi_types.h"
 #include "lwip/api.h"
@@ -73,6 +74,10 @@ ALL_WIFI_CONFIGURING_STATE(, )
 /*
  *  --------------------- Global variables ---------------------
  */
+/* esp netif object representing the WIFI station */
+esp_netif_t *sta_netif = NULL;
+esp_netif_t *ap_netif = NULL;
+
 #define ADD_ROOT(NAME, CHILD) ADD_ROOT_(NAME, CHILD)
 #define ADD_LEAF(NAME, PARENT, LEVEL) ADD_LEAF_(NAME, PARENT, LEVEL)
 #define ADD_ROOT_LEAF(NAME) ADD_ROOT_LEAF_(NAME)
@@ -257,6 +262,10 @@ static state_machine_result_t NETWORK_INITIALIZING_STATE_entry_handler(state_mac
     
     MEMTRACE_PRINT_DELTA_MESSAGE(" Initializing tcp_ip adapter");
     esp_netif_init();
+    // TODO: Need to know whether in AP or STA mode...
+    ap_netif = esp_netif_create_default_wifi_ap();
+    sta_netif = esp_netif_create_default_wifi_sta();
+    assert(sta_netif);
     MEMTRACE_PRINT_DELTA_MESSAGE(" Creating the default event loop");
     ESP_ERROR_CHECK(esp_event_loop_create_default());
     MEMTRACE_PRINT_DELTA_MESSAGE("Initializing network status");
