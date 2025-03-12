@@ -1,3 +1,4 @@
+syntax = "proto2";
 message LoginCryptoDiffieHellmanChallenge {
     required bytes gs = 0xa; 
 }
