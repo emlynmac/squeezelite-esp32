@@ -25,7 +25,7 @@ static void bt_app_task_handler(void *arg);
 static bool bt_app_send_msg(bt_app_msg_t *msg);
 static void bt_app_work_dispatched(bt_app_msg_t *msg);
 
-static xQueueHandle s_bt_app_task_queue;
+static QueueHandle_t s_bt_app_task_queue;
 static bool running;
 
 bool bt_app_work_dispatch(bt_app_cb_t p_cback, uint16_t event, void *p_params, int param_len, bt_app_copy_cb_t p_copy_cback)
@@ -126,7 +126,7 @@ static void bt_app_task_handler(void *arg)
 	running = true;
 	
 	while (running) {
-        if (pdTRUE == xQueueReceive(s_bt_app_task_queue, &msg, (portTickType)portMAX_DELAY)) {
+        if (pdTRUE == xQueueReceive(s_bt_app_task_queue, &msg, (TickType_t) portMAX_DELAY) ) {
         	ESP_LOGV(TAG,"%s, sig 0x%x, 0x%x", __func__, msg.sig, msg.event);
 			
             switch (msg.sig) {

@@ -9,6 +9,9 @@
  */
  
 #pragma once
+#include <stdint.h>
+#include <stdbool.h>
+
 typedef struct {
 	int gpio;
 	int active;

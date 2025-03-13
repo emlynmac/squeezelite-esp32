@@ -1,8 +1,9 @@
 #pragma once
 
 #include "esp_system.h"
-#include "esp_wifi.h"
-#include "esp_wifi_types.h"
+// #include "esp_wifi.h"
+// #include "esp_wifi_types.h"
+#include "esp_wifi_types_generic.h"
 #include "squeezelite-ota.h"
 #include "cJSON.h"
 #include "esp_eth.h"

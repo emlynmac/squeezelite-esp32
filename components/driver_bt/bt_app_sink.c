@@ -425,7 +425,7 @@ static void bt_av_notify_evt_handler(uint8_t event_id, esp_avrc_rn_param_t *even
         bt_av_playback_changed();
         break;
     case ESP_AVRC_RN_PLAY_POS_CHANGED:
-        ESP_LOGD(BT_AV_TAG, "Play position changed: %d (ms)", event_parameter->play_pos);
+        ESP_LOGD(BT_AV_TAG, "Play position changed: %ld (ms)", event_parameter->play_pos);
 		(*bt_app_a2d_cmd_cb)(BT_SINK_PROGRESS, event_parameter->play_pos, -1);
         bt_av_play_pos_changed();
         break;
@@ -473,7 +473,7 @@ static void bt_av_hdl_avrc_ct_evt(uint16_t event, void *p_param)
         break;
     }
     case ESP_AVRC_CT_REMOTE_FEATURES_EVT: {
-        ESP_LOGD(BT_RC_CT_TAG, "AVRC remote features %x, TG features %x", rc->rmt_feats.feat_mask, rc->rmt_feats.tg_feat_flag);
+        ESP_LOGD(BT_RC_CT_TAG, "AVRC remote features %lx, TG features %x", rc->rmt_feats.feat_mask, rc->rmt_feats.tg_feat_flag);
         break;
     }
     case ESP_AVRC_CT_GET_RN_CAPABILITIES_RSP_EVT: {
@@ -545,7 +545,7 @@ static void bt_av_hdl_avrc_tg_evt(uint16_t event, void *p_param)
         break;
     }
     case ESP_AVRC_TG_REGISTER_NOTIFICATION_EVT: {
-        ESP_LOGD(BT_RC_TG_TAG, "AVRC register event notification: %d, param: 0x%x", rc->reg_ntf.event_id, rc->reg_ntf.event_parameter);
+        ESP_LOGD(BT_RC_TG_TAG, "AVRC register event notification: %d, param: 0x%lx", rc->reg_ntf.event_id, rc->reg_ntf.event_parameter);
         if (rc->reg_ntf.event_id == ESP_AVRC_RN_VOLUME_CHANGE) {
             s_volume_notify = true;
             esp_avrc_rn_param_t rn_param;
@@ -555,7 +555,7 @@ static void bt_av_hdl_avrc_tg_evt(uint16_t event, void *p_param)
         break;
     }
     case ESP_AVRC_TG_REMOTE_FEATURES_EVT: {
-        ESP_LOGD(BT_RC_TG_TAG, "AVRC remote features %x, CT features %x", rc->rmt_feats.feat_mask, rc->rmt_feats.ct_feat_flag);
+        ESP_LOGD(BT_RC_TG_TAG, "AVRC remote features %x, CT features %x", (unsigned int)rc->rmt_feats.feat_mask, rc->rmt_feats.ct_feat_flag);
         break;
     }
     default:
@@ -620,7 +620,7 @@ static void bt_app_gap_cb(esp_bt_gap_cb_event_t event, esp_bt_gap_cb_param_t *pa
     case ESP_BT_GAP_AUTH_CMPL_EVT: {
         if (param->auth_cmpl.stat == ESP_BT_STATUS_SUCCESS) {
             ESP_LOGD(BT_AV_TAG, "authentication success: %s", param->auth_cmpl.device_name);
-            esp_log_buffer_hex(BT_AV_TAG, param->auth_cmpl.bda, ESP_BD_ADDR_LEN);
+            ESP_LOG_BUFFER_HEX(BT_AV_TAG, param->auth_cmpl.bda, ESP_BD_ADDR_LEN);
         } else {
             ESP_LOGE(BT_AV_TAG, "authentication failed, status:%d", param->auth_cmpl.stat);
         }
@@ -655,7 +655,7 @@ static void bt_av_hdl_stack_evt(uint16_t event, void *p_param)
     case BT_APP_EVT_STACK_UP: {
         /* set up device name */
 		bt_name = (char * )config_alloc_get_default(NVS_TYPE_STR, "bt_name", CONFIG_BT_NAME, 0);
-		esp_bt_dev_set_device_name(bt_name);
+		esp_bt_gap_set_device_name(bt_name);
 		free(bt_name);
         esp_bt_gap_register_callback(bt_app_gap_cb);
 

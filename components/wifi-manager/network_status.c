@@ -12,6 +12,7 @@
 #include "monitor.h"
 #include "network_ethernet.h"
 #include "network_wifi.h"
+#include "esp_wifi.h"
 #include "platform_config.h"
 #include "platform_esp32.h"
 #include "tools.h"
@@ -252,7 +253,7 @@ cJSON* network_status_get_basic_info(cJSON** old) {
     if (network_status_lock_json_buffer(portMAX_DELAY)) {
         network_t* nm = network_get_state_machine();
         monitor_gpio_t* mgpio = get_jack_insertion_gpio();
-        const esp_app_desc_t* desc = esp_ota_get_app_description();
+        const esp_app_desc_t* desc = esp_app_get_description();
 
         *old = network_update_cjson_string(old, "project_name", desc->project_name);
 #ifdef CONFIG_FW_PLATFORM_NAME

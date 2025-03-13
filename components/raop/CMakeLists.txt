@@ -1,7 +1,7 @@
 
 idf_component_register(SRC_DIRS .    
 						INCLUDE_DIRS .   
-						PRIV_REQUIRES newlib freertos esp_netif pthread platform_config mdns services codecs tools display wifi-manager
+						PRIV_REQUIRES mbedtls newlib freertos esp_netif pthread platform_config mdns services codecs tools display wifi-manager
 						  
 )
 set_source_files_properties(raop.c

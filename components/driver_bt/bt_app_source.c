@@ -74,7 +74,7 @@ static void bt_app_rc_ct_cb(esp_avrc_ct_cb_event_t event, esp_avrc_ct_cb_param_t
 static void bt_av_hdl_avrc_ct_evt(uint16_t event, void *p_param);
 
 /// callback function for A2DP source audio data stream
-static void a2d_app_heart_beat(void *arg);
+static void a2d_app_heart_beat(TimerHandle_t xTimer);
 
 /// A2DP application state machine
 static void bt_app_av_sm_hdlr(uint16_t event, void *param);
@@ -154,13 +154,13 @@ static void peers_list_update_add(const char * s_peer_bdname, int32_t rssi){
     if(element){
         cJSON * rssi_val = cJSON_GetObjectItem(element,"rssi");
         if(rssi_val && rssi_val->valuedouble != rssi){
-            ESP_LOGV(TAG,"Updating BT Sink Device: %s rssi to %i", s_peer_bdname,rssi);
+            ESP_LOGV(TAG,"Updating BT Sink Device: %s rssi to %li", s_peer_bdname,rssi);
             rssi_val->valuedouble = rssi;
             rssi_val->valueint = rssi;
         }
     }
     else {
-        ESP_LOGI(TAG,"Found BT Sink Device: %s rssi is %i", s_peer_bdname,rssi);
+        ESP_LOGI(TAG,"Found BT Sink Device: %s rssi is %li", s_peer_bdname,rssi);
         element = peers_list_create_entry( s_peer_bdname,  rssi);
         cJSON_AddItemToArray(peers_list,element);
     }
@@ -180,7 +180,7 @@ static void peers_list_maintain(const char * s_peer_bdname, int32_t rssi){
         peers_list_purge();
     }
     if(s_peer_bdname) {
-        ESP_LOGV(TAG,"Adding/Updating peer %s rssi %i", s_peer_bdname,rssi);
+        ESP_LOGV(TAG,"Adding/Updating peer %s rssi %li", s_peer_bdname,rssi);
         peers_list_update_add(s_peer_bdname, rssi);
     }
     char * list_json = cJSON_Print(peers_list);
@@ -367,7 +367,7 @@ static void bt_app_gap_cb(esp_bt_gap_cb_event_t event, esp_bt_gap_cb_param_t *pa
     case ESP_BT_GAP_AUTH_CMPL_EVT: {
     	if (param->auth_cmpl.stat == ESP_BT_STATUS_SUCCESS) {
             ESP_LOGI(TAG,"authentication success: %s", param->auth_cmpl.device_name);
-            //esp_log_buffer_hex(param->auth_cmpl.bda, ESP_BD_ADDR_LEN);
+            //ESP_LOG_BUFFER_HEX(param->auth_cmpl.bda, ESP_BD_ADDR_LEN);
         } else {
             ESP_LOGE(TAG,"authentication failed, status:%d", param->auth_cmpl.stat);
         }
@@ -649,11 +649,11 @@ static void filter_inquiry_scan_result(esp_bt_gap_cb_param_t *param)
         switch (p->type) {
         case ESP_BT_GAP_DEV_PROP_COD:
             cod = *(uint32_t *)(p->val);
-            ESP_LOGV(TAG,"-- Class of Device: 0x%x", cod);
+            ESP_LOGV(TAG,"-- Class of Device: 0x%lx", cod);
             break;
         case ESP_BT_GAP_DEV_PROP_RSSI:
             rssi = *(int8_t *)(p->val);
-            ESP_LOGV(TAG,"-- RSSI: %d", rssi);
+            ESP_LOGV(TAG,"-- RSSI: %ld", rssi);
             break;
         case ESP_BT_GAP_DEV_PROP_EIR:
             eir = (uint8_t *)(p->val);
@@ -710,10 +710,10 @@ static void bt_av_hdl_stack_evt(uint16_t event, void *p_param)
         char * a2dp_dev_name = 	config_alloc_get_default(NVS_TYPE_STR, "a2dp_dev_name", CONFIG_A2DP_DEV_NAME, 0);
     	if(a2dp_dev_name  == NULL){
     		ESP_LOGW(TAG,"Unable to retrieve the a2dp device name from nvs");
-    		esp_bt_dev_set_device_name(CONFIG_A2DP_DEV_NAME);
+    		esp_bt_gap_set_device_name(CONFIG_A2DP_DEV_NAME);
     	}
     	else {
-    		esp_bt_dev_set_device_name(a2dp_dev_name);
+    		esp_bt_gap_set_device_name(a2dp_dev_name);
     		free(a2dp_dev_name);
     	}
 
@@ -1045,7 +1045,7 @@ static void bt_av_hdl_avrc_ct_evt(uint16_t event, void *p_param)
         break;
     }
     case ESP_AVRC_CT_REMOTE_FEATURES_EVT: {
-        ESP_LOGI(BT_RC_CT_TAG, "AVRC remote features %x, TG features %x", rc->rmt_feats.feat_mask, rc->rmt_feats.tg_feat_flag);
+        ESP_LOGI(BT_RC_CT_TAG, "AVRC remote features %lx, TG features %x", rc->rmt_feats.feat_mask, rc->rmt_feats.tg_feat_flag);
         break;
     }
     case ESP_AVRC_CT_GET_RN_CAPABILITIES_RSP_EVT: {

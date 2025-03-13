@@ -1,5 +1,6 @@
 #pragma once
 #include "network_manager.h"
+#include "esp_wifi_types_generic.h"
 #ifdef __cplusplus
 extern "C" {
 

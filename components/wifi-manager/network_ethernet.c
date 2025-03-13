@@ -5,6 +5,7 @@
 #include "freertos/timers.h"
 #include "messaging.h"
 #include "esp_mac.h"
+#include "esp_event.h"
 #include "network_status.h"
 #include "platform_config.h"
 #include "tools.h"

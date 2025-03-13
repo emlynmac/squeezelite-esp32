@@ -8,6 +8,7 @@ idf_component_register( SRC_DIRS . external ac101 tas57xx wm8978
 						PRIV_REQUIRES 	
 									codecs
 									newlib 
+									esp_timer
 									esp_common 
 									esp-dsp
 						  			platform_config 
