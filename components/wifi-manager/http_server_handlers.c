@@ -7,6 +7,7 @@ Copyright (c) 2017-2021 Sebastien L
 #include "cmd_system.h"
 #include <inttypes.h>
 #include "lwip/inet.h"
+#include "lwip/sockets.h"
 #include "squeezelite-ota.h"
 #include "nvs_utilities.h"
 #include <stdio.h>
@@ -52,12 +53,12 @@ typedef struct session_context {
 } session_context_t;
 
 
-union sockaddr_aligned {
-	struct sockaddr     sa;
-    struct sockaddr_storage st;
-    struct sockaddr_in  sin;
-    struct sockaddr_in6 sin6;
-} aligned_sockaddr_t;
+// union sockaddr_aligned {
+// 	struct sockaddr     sa;
+//     struct sockaddr_storage st;
+//     struct sockaddr_in  sin;
+//     struct sockaddr_in6 sin6;
+// } aligned_sockaddr_t;
 esp_err_t post_handler_buff_receive(httpd_req_t * req);
 static const char redirect_payload1[]="<html><head><title>Redirecting to Captive Portal</title><meta http-equiv='refresh' content='0; url=";
 static const char redirect_payload2[]="'></head><body><p>Please wait, refreshing.  If page does not refresh, click <a href='";
@@ -89,46 +90,74 @@ char * alloc_get_http_header(httpd_req_t * req, const char * key){
     return buf;
 }
 
+union sockaddr_aligned {
+	struct sockaddr sa;
+	struct sockaddr_storage st;
+#if LWIP_IPV6
+	struct sockaddr_in6 sin6;
+#endif /* LWIP_IPV6 */
+#if LWIP_IPV4
+	struct sockaddr_in sin;
+#endif /* LWIP_IPV4 */
+};
 
-char * http_alloc_get_socket_address(httpd_req_t *req, u8_t local, in_port_t * portl) {
+// Returns string of socket address for a request, populating the port.
+char * http_alloc_get_socket_address(httpd_req_t *req, u8_t local, in_port_t *portl) {
 
 	socklen_t len;
-	union sockaddr_aligned addr;
-	len = sizeof(addr);
-	ip_addr_t * ip_addr=NULL;
-	char * ipstr = malloc_init_external(INET6_ADDRSTRLEN);
-	typedef int (*getaddrname_fn_t)(int s, struct sockaddr *name, socklen_t *namelen);
-	getaddrname_fn_t get_addr = NULL;
+	union sockaddr_aligned sock_addr;
+	len = sizeof(sock_addr);
+	ip_addr_t *ip_addr = NULL;
+	char *ipstr = malloc_init_external(INET6_ADDRSTRLEN);
 
-	int s = httpd_req_to_sockfd(req);
-	if(s == -1) {
+	int sock = httpd_req_to_sockfd(req);
+	if(sock == -1) {
 		free(ipstr);
 		return strdup_psram("httpd_req_to_sockfd error");
 	}
-	ESP_LOGV_LOC(TAG,"httpd socket descriptor: %u", s);
+	ESP_LOGV_LOC(TAG,"httpd socket descriptor: %u", sock);
 
-	get_addr = local?&lwip_getsockname:&lwip_getpeername;
-	if(get_addr(s, (struct sockaddr *)&addr, &len) <0){
+	err_t err = local ? lwip_getsockname(sock, &sock_addr.sa, &len) : (lwip_getpeername(sock, &sock_addr.sa, &len) < 0);
+	if (err != ESP_OK) {
 		ESP_LOGE_LOC(TAG,"Failed to retrieve socket address");
-		sprintf(ipstr,"N/A (0.0.0.%u)",local);
+		sprintf(ipstr,"N/A (0.0.0.%u)", local);
+		return ipstr;
 	}
-	else {
-		if (addr.sin.sin_family!= AF_INET) {
-			ip_addr = (ip_addr_t *)&(addr.sin6.sin6_addr);
-			inet_ntop(addr.sa.sa_family, ip_addr, ipstr, INET6_ADDRSTRLEN);
-			ESP_LOGV_LOC(TAG,"Processing an IPV6 address : %s", ipstr);
-			*portl =  addr.sin6.sin6_port;
+	// sock_addr now populated
+
+#if LWIP_IPV6
+	if (sock_addr.sa.sa_family == AF_INET6) {
+		struct sockaddr_in6 *addr6 = (struct sockaddr_in6 *)&sock_addr.sin6;
+
+		ip_addr = (ip_addr_t *) &(addr6->sin6_addr);
+		inet_ntop(sock_addr.sa.sa_family, &ip_addr, ipstr, INET6_ADDRSTRLEN);
+		ESP_LOGV_LOC(TAG,"Processing an IPV6 address : %s", ipstr);
+		*portl = addr6->sin6_port;
+
+#if LWIP_IPV4
+  		// Dual-stack: Unmap IPv4 mapped IPv6 addresses 
+		if (IP_IS_V6_VAL(*ip_addr) && ip6_addr_isipv4mappedipv6(ip_2_ip6(ip_addr))) {
 			unmap_ipv4_mapped_ipv6(ip_2_ip4(ip_addr), ip_2_ip6(ip_addr));
+			IP_SET_TYPE_VAL(*ip_addr, IPADDR_TYPE_V4);
 		}
-		else {
-			ip_addr = (ip_addr_t *)&(addr.sin.sin_addr);
-			inet_ntop(addr.sa.sa_family, ip_addr, ipstr, INET6_ADDRSTRLEN);
-			ESP_LOGV_LOC(TAG,"Processing an IPV6 address : %s", ipstr);
-			*portl =  addr.sin.sin_port;
-		}
-		inet_ntop(AF_INET, ip_addr, ipstr, INET6_ADDRSTRLEN);
-		ESP_LOGV_LOC(TAG,"Retrieved ip address:port = %s:%u",ipstr, *portl);
+#endif /* LWIP_IPV4 */
 	}
+	else 
+#endif /* LWIP_IPV6 */
+	
+#if LWIP_IPV4
+	if (sock_addr.sa.sa_family == AF_INET) {
+		struct sockaddr_in *addr4 = (struct sockaddr_in *)&sock_addr.sin;
+
+		ip_addr = (ip_addr_t *) &(addr4->sin_addr);
+		inet_ntop(sock_addr.sa.sa_family, ip_addr, ipstr, INET_ADDRSTRLEN);
+		ESP_LOGV_LOC(TAG,"Processing an IPV4 address : %s", ipstr);
+		*portl = addr4->sin_port;
+	}
+#endif /* LWIP_IPV4 */
+	inet_ntop(AF_INET, ip_addr, ipstr, INET6_ADDRSTRLEN);
+	ESP_LOGV_LOC(TAG,"Retrieved ip address:port = %s:%u",ipstr, *portl);
+	
 	return ipstr;
 }
 bool is_captive_portal_host_name(httpd_req_t *req){
@@ -170,7 +199,7 @@ bool is_captive_portal_host_name(httpd_req_t *req){
 			memset(ap_ip_address, 0x00, IP4ADDR_STRLEN_MAX);
 			if(ap_ip_address){
 				ESP_LOGD_LOC(TAG,  "Converting soft ip address to string");
-				ip4addr_ntoa_r(&ip_info.ip, ap_ip_address, IP4ADDR_STRLEN_MAX);
+				esp_ip4addr_ntoa(&ip_info.ip, ap_ip_address, IP4ADDR_STRLEN_MAX);
 				ESP_LOGD_LOC(TAG,"ap_netif is up and has ip address %s ", ap_ip_address);
 			}
 		}
@@ -933,7 +962,7 @@ char * get_ap_ip_address(){
 		}
 		else {
 			ESP_LOGV_LOC(TAG,  "Converting soft ip address to string");
-			ip4addr_ntoa_r(&ip_info.ip, ap_ip_address, IP4ADDR_STRLEN_MAX);
+			esp_ip4addr_ntoa(&ip_info.ip, ap_ip_address, IP4ADDR_STRLEN_MAX);
 			ESP_LOGD_LOC(TAG,"ap_netif is up and has ip address %s ", ap_ip_address);
 		}
 	}
