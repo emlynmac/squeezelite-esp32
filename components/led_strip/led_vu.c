@@ -47,7 +47,7 @@ static int battery_status = 0;
 #define max(a,b) (((a) > (b)) ? (a) : (b))
 
 struct led_strip_t* led_display = NULL;
-static EXT_RAM_BSS_ATTR struct led_strip_t  led_strip_config;
+static EXT_RAM_BSS_ATTR struct led_strip_t led_strip_config;
 
 static EXT_RAM_BSS_ATTR struct {
     int gpio;

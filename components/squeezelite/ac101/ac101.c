@@ -29,7 +29,7 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 #include <driver/i2c.h>
-#include <driver/i2s.h>
+#include <driver/i2s_std.h>
 #include "adac.h"
 #include "ac101.h"
 
@@ -48,7 +48,7 @@ static const char TAG[] = "AC101";
         return b;\
     }
 	
-static bool init(char *config, int i2c_port, i2s_config_t *i2s_config, bool *mck);
+static bool init(char *config, int i2c_port, i2s_std_config_t *i2s_config, bool *mck);
 static void speaker(bool active);
 static void headset(bool active);
 static bool volume(unsigned left, unsigned right);
@@ -64,7 +64,7 @@ static void ac101_set_spk_volume(uint8_t volume);
 /****************************************************************************************
  * init
  */
-static bool init(char *config, int i2c_port, i2s_config_t *i2s_config, bool *mck) {	 
+static bool init(char *config, int i2c_port, i2s_std_config_t *i2s_config, bool *mck) {	 
 	adac_init(config, i2c_port);
 	if (adac_read_word(AC101_ADDR, CHIP_AUDIO_RS) == 0xffff) {
 		ESP_LOGW(TAG, "No AC101 detected");

@@ -11,6 +11,7 @@ idf_component_register( SRC_DIRS . external ac101 tas57xx wm8978
 									esp_timer
 									esp_common 
 									esp-dsp
+									esp_rom
 						  			platform_config 
 						 			services 
 									spotify

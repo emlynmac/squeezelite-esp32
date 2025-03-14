@@ -13,7 +13,7 @@
 #include <string.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include "driver/i2s.h"
+#include "driver/i2s_std.h"
 #include "driver/i2c.h"
 #include "driver/gpio.h"
 #include "esp_log.h"
@@ -39,7 +39,7 @@
 
 static const char TAG[] = "TAS5713";
 
-static bool init(char *config, int i2c_port_num, i2s_config_t *i2s_config, bool *mck);
+static bool init(char *config, int i2c_port_num, i2s_std_config_t *i2s_config, bool *mck);
 static void speaker(bool active) { };
 static void headset(bool active) { } ;
 static bool volume(unsigned left, unsigned right);
@@ -65,7 +65,7 @@ typedef enum {
 /****************************************************************************************
  * init
  */
-static bool init(char *config, int i2c_port, i2s_config_t *i2s_config, bool *mck) {	 
+static bool init(char *config, int i2c_port, i2s_std_config_t *i2s_config, bool *mck) {	 
 	/* find if there is a tas5713 attached. Reg 0 should read non-zero but not 255 if so */
 	adac_init(config, i2c_port);
     if (adac_read_byte(TAS5713, 0x00) == 255) {
@@ -92,7 +92,7 @@ static bool init(char *config, int i2c_port, i2s_config_t *i2s_config, bool *mck
        multiple is 64x. To achieve this,  32 bits per channel on must be sent
        over I2S. Reconfigure the I2S for that here, and expand the I2S stream
        when it is sent */
-    i2s_config->bits_per_sample = 32;
+    i2s_config->slot_cfg.data_bit_width = 32;
 
     if (res != ESP_OK) {
         ESP_LOGE(TAG, "could not intialize TAS5713 %d", res);

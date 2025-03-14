@@ -32,6 +32,7 @@
 #include "rtp.h"
 #include "dmap_parser.h"
 #include "log_util.h"
+#include "esp_random.h"
 
 #define RTSP_STACK_SIZE 	(8*1024)
 #define SEARCH_STACK_SIZE	(3*1024)
@@ -445,7 +446,7 @@ static bool handle_rtsp(raop_ctx_t *ctx, int sock)
 	}
 
 	if ((buf = kd_lookup(headers, "Apple-Challenge")) != NULL) {
-		int n;
+		int n = 0;
 		char *buf_pad, *p, *data_b64 = NULL, data[32];
 
 		LOG_INFO("[%p]: challenge %s", ctx, buf);
@@ -776,6 +777,11 @@ static void search_remote(void *args) {
  }
 #endif
 
+// Function to generate random numbers for the MbedTLS functions that now require them
+static int rng_cb(void * ctx, unsigned char *buf, size_t len) {
+	esp_fill_random(buf, len);
+	return 0;
+}
 
 /*----------------------------------------------------------------------------*/
 static char *rsa_apply(unsigned char *input, int inlen, int *outlen, int mode)
@@ -831,16 +837,12 @@ static char *rsa_apply(unsigned char *input, int inlen, int *outlen, int mode)
 	mbedtls_pk_context pkctx;
 	mbedtls_rsa_context *trsa;
 	size_t olen;
-	
-	/*
-	we should do entropy initialization & pass a rng function but this
-	consumes a ton of stack and there is no security concern here. Anyway,
-	mbedtls takes a lot of stack, unfortunately ...
-	*/
 
 	mbedtls_pk_init(&pkctx);
-	mbedtls_pk_parse_key(&pkctx, (unsigned char *)super_secret_key,
-		sizeof(super_secret_key), NULL, 0);
+	mbedtls_pk_parse_key(&pkctx, 
+		(unsigned char *)super_secret_key, sizeof(super_secret_key),
+		 NULL, 0,
+		rng_cb, NULL);
 
 	uint8_t *outbuf = NULL;
 	trsa = mbedtls_pk_rsa(pkctx);
@@ -848,14 +850,14 @@ static char *rsa_apply(unsigned char *input, int inlen, int *outlen, int mode)
 	switch (mode) {
 	case RSA_MODE_AUTH:
 		mbedtls_rsa_set_padding(trsa, MBEDTLS_RSA_PKCS_V15, MBEDTLS_MD_NONE);
-		outbuf = malloc(trsa->len);
-		mbedtls_rsa_pkcs1_encrypt(trsa, NULL, NULL, MBEDTLS_RSA_PRIVATE, inlen, input, outbuf);
-		*outlen = trsa->len;
+		outbuf = malloc(trsa->MBEDTLS_PRIVATE(len));
+		mbedtls_rsa_pkcs1_encrypt(trsa, NULL, NULL, inlen, input, outbuf);
+		// *outlen = trsa->len;
 		break;
 	case RSA_MODE_KEY:
 		mbedtls_rsa_set_padding(trsa, MBEDTLS_RSA_PKCS_V21, MBEDTLS_MD_SHA1);
-		outbuf = malloc(trsa->len);
-		mbedtls_rsa_pkcs1_decrypt(trsa, NULL, NULL, MBEDTLS_RSA_PRIVATE, &olen, input, outbuf, trsa->len);
+		outbuf = malloc(trsa->MBEDTLS_PRIVATE(len));
+		mbedtls_rsa_pkcs1_decrypt(trsa, NULL, NULL, &olen, input, outbuf, trsa->MBEDTLS_PRIVATE(len));
 		*outlen = olen;
 		break;
 	}

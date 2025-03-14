@@ -11,10 +11,11 @@
  
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
-#include <driver/i2s.h>
+#include "driver/i2s_std.h"
 #include "driver/i2c.h"
 #include "esp_log.h"
 #include "gpio_exp.h"
+#include "esp_rom_gpio.h"
 #include "cJSON.h"
 #include "platform_config.h"
 #include "adac.h"
@@ -25,7 +26,7 @@ static void speaker(bool active);
 static void headset(bool active);
 static bool volume(unsigned left, unsigned right) { return false; }
 static void power(adac_power_e mode);
-static bool init(char *config, int i2c_port_num, i2s_config_t *i2s_config, bool *mck);
+static bool init(char *config, int i2c_port_num, i2s_std_config_t *i2s_config, bool *mck);
 
 static bool i2c_json_execute(char *set);
 
@@ -57,7 +58,7 @@ static const struct {
 /****************************************************************************************
  * init
  */
-static bool init(char *config, int i2c_port_num, i2s_config_t *i2s_config, bool *mck) {	 
+static bool init(char *config, int i2c_port_num, i2s_std_config_t *i2s_config, bool *mck) {	 
 	char *p;	
 	
 	i2c_addr = adac_init(config, i2c_port_num);
@@ -136,7 +137,9 @@ bool i2c_json_execute(char *set) {
         if ((action = cJSON_GetObjectItemCaseSensitive(item, "gpio")) != NULL) {
             cJSON *level = cJSON_GetObjectItemCaseSensitive(item, "level");
             ESP_LOGI(TAG, "set GPIO %d at %d", action->valueint, level->valueint);
-            if (action->valueint < GPIO_NUM_MAX) gpio_pad_select_gpio(action->valueint);
+            if (action->valueint < GPIO_NUM_MAX) {
+				esp_rom_gpio_pad_select_gpio(action->valueint);
+			}
             gpio_set_direction_x(action->valueint, GPIO_MODE_OUTPUT);
             gpio_set_level_x(action->valueint, level->valueint);
             continue;

@@ -94,7 +94,7 @@ int embedded_init(void) {
 #endif
 
 	if (power_control.gpio != -1) {
-		gpio_pad_select_gpio_x(power_control.gpio);
+		esp_rom_gpio_pad_select_gpio(power_control.gpio);
 		gpio_set_direction_x(power_control.gpio, GPIO_MODE_OUTPUT);
 		gpio_set_level_x(power_control.gpio, !power_control.active);
 		ESP_LOGI(TAG, "setting power GPIO %d (active:%d)", power_control.gpio, power_control.active);	

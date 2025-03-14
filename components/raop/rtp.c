@@ -213,7 +213,7 @@ rtp_resp_t rtp_init(struct in_addr host, int latency, char *aeskey, char *aesiv,
 {
 	int i = 0;
 	char *arg;
-	int fmtp[12];
+	int fmtp[32];
 	bool rc = true;
 	rtp_t *ctx = calloc(1, sizeof(rtp_t));
 	rtp_resp_t resp = { 0, 0, 0, NULL };
@@ -423,9 +423,9 @@ static void alac_decode(rtp_t *ctx, s16_t *dest, char *buf, int len, u16_t *outs
 		mbedtls_aes_crypt_cbc(&ctx->aes, MBEDTLS_AES_DECRYPT, aeslen, iv, (unsigned char*) buf, ctx->decrypt_buf);
 #endif
 		memcpy(ctx->decrypt_buf+aeslen, buf+aeslen, len-aeslen);
-		alac_to_pcm(ctx->alac_codec, (unsigned char*) ctx->decrypt_buf, (unsigned char*) dest, 2, (unsigned int*) outsize);
+		alac_to_pcm(ctx->alac_codec, (unsigned char*) ctx->decrypt_buf, (unsigned char*) dest, 2, (unsigned long int*) outsize);
 	} else {
-		alac_to_pcm(ctx->alac_codec, (unsigned char*) buf, (unsigned char*) dest, 2, (unsigned int*) outsize);
+		alac_to_pcm(ctx->alac_codec, (unsigned char*) buf, (unsigned char*) dest, 2, (unsigned long int*) outsize);
 	}	
 	
 	*outsize *= 4;

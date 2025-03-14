@@ -209,7 +209,7 @@ gpio_exp_t* gpio_exp_create(const gpio_exp_config_t *config) {
 
 	// set interrupt if possible
 	if (config->intr >= 0) {
-		gpio_pad_select_gpio(config->intr);
+		esp_rom_gpio_pad_select_gpio(config->intr);
 		gpio_set_direction(config->intr, GPIO_MODE_INPUT);
 
 		switch (expander->model->trigger) {
