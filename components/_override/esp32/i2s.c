@@ -74,7 +74,7 @@ typedef struct {
     int rw_pos;
     void *curr_ptr;
     SemaphoreHandle_t mux;
-    xQueueHandle queue;
+    QueueHandle_t queue;
     lldesc_t **desc;
 } i2s_dma_t;
 
