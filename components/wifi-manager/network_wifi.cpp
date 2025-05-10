@@ -24,7 +24,7 @@
 
 
 WifiList* wifi_config_aps;
-EXT_RAM_ATTR WifiList scan_results_aps("scan_results");
+EXT_RAM_BSS_ATTR WifiList scan_results_aps("scan_results");
 
 static void network_wifi_event_handler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data);
 static const char* get_disconnect_code_desc(uint8_t reason);

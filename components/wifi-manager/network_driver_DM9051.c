@@ -1,11 +1,11 @@
 #include "esp_eth.h"
 #include "network_ethernet.h"
 
-static EXT_RAM_ATTR network_ethernet_driver_t DM9051;
-static EXT_RAM_ATTR spi_device_interface_config_t devcfg;
-static EXT_RAM_ATTR esp_netif_config_t cfg_spi;
-static EXT_RAM_ATTR esp_netif_inherent_config_t esp_netif_config;
-static EXT_RAM_ATTR gpio_num_t rst = -1;
+static EXT_RAM_BSS_ATTR network_ethernet_driver_t DM9051;
+static EXT_RAM_BSS_ATTR spi_device_interface_config_t devcfg;
+static EXT_RAM_BSS_ATTR esp_netif_config_t cfg_spi;
+static EXT_RAM_BSS_ATTR esp_netif_inherent_config_t esp_netif_config;
+static EXT_RAM_BSS_ATTR gpio_num_t rst = -1;
 static esp_err_t reset_hw(esp_eth_phy_t *phy)
 {
     // set reset_gpio_num to a negative value can skip hardware reset phy chip

@@ -36,8 +36,8 @@ static bool i2c_execute_cmd(sys_dac_control_type cmd_type);
 const struct adac_s dac_external = {sys_dac_models_I2S, init, adac_deinit, power, speaker, headset, volume};
 static int i2c_addr;
 extern sys_dac_default_sets* default_dac_sets;
-static EXT_RAM_ATTR sys_dac_control_set* i2c_default_controlset = NULL;
-static EXT_RAM_ATTR sys_dac_control_set* i2c_controlset = NULL;
+static EXT_RAM_BSS_ATTR sys_dac_control_set* i2c_default_controlset = NULL;
+static EXT_RAM_BSS_ATTR sys_dac_control_set* i2c_controlset = NULL;
 
 /****************************************************************************************
  * init

@@ -23,7 +23,7 @@ typedef struct mem_usage_trace_for_thread {
     SLIST_ENTRY(mem_usage_trace_for_thread) next;
 } mem_usage_trace_for_thread_t;
 
-static EXT_RAM_ATTR SLIST_HEAD(memtrace, mem_usage_trace_for_thread) s_memtrace;
+static EXT_RAM_BSS_ATTR SLIST_HEAD(memtrace, mem_usage_trace_for_thread) s_memtrace;
 
 mem_usage_trace_for_thread_t* memtrace_get_thread_entry(TaskHandle_t task)  {
     if(!task) {

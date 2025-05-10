@@ -11,10 +11,10 @@ static const char* TAG = "bootstate";
 RTC_NOINIT_ATTR uint32_t RebootCounter;
 RTC_NOINIT_ATTR uint32_t RecoveryRebootCounter;
 RTC_NOINIT_ATTR uint16_t ColdBootIndicatorFlag;
-EXT_RAM_ATTR bool is_recovery_running = false;
-EXT_RAM_ATTR bool cold_boot = true;
-EXT_RAM_ATTR esp_reset_reason_t xReason = ESP_RST_UNKNOWN;
-EXT_RAM_ATTR static bool restarting = false;
+EXT_RAM_BSS_ATTR bool is_recovery_running = false;
+EXT_RAM_BSS_ATTR bool cold_boot = true;
+EXT_RAM_BSS_ATTR esp_reset_reason_t xReason = ESP_RST_UNKNOWN;
+EXT_RAM_BSS_ATTR static bool restarting = false;
 
 uint32_t bootstate_read_counter(void) { return RebootCounter; }
 uint32_t bootstate_uptate_counter(int32_t xValue) {

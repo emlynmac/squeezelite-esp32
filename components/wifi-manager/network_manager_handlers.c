@@ -47,10 +47,10 @@
 
 static const char TAG[] = "network_handlers";
 
-EXT_RAM_ATTR static state_t network_states[TOTAL_NM_STATE];
-EXT_RAM_ATTR static state_t Wifi_Active_State[TOTAL_WIFI_ACTIVE_STATE];
-EXT_RAM_ATTR static state_t Eth_Active_State[TOTAL_ETH_ACTIVE_STATE];
-EXT_RAM_ATTR static state_t Wifi_Configuring_State[TOTAL_WIFI_CONFIGURING_STATE];
+EXT_RAM_BSS_ATTR static state_t network_states[TOTAL_NM_STATE];
+EXT_RAM_BSS_ATTR static state_t Wifi_Active_State[TOTAL_WIFI_ACTIVE_STATE];
+EXT_RAM_BSS_ATTR static state_t Eth_Active_State[TOTAL_ETH_ACTIVE_STATE];
+EXT_RAM_BSS_ATTR static state_t Wifi_Configuring_State[TOTAL_WIFI_CONFIGURING_STATE];
 static void network_interface_coexistence(state_machine_t* state_machine);
 static state_machine_result_t local_traverse_state(state_machine_t* const state_machine, const state_t* const target_state, const char* caller);
 static state_machine_result_t local_switch_state(state_machine_t* state_machine, const state_t* const target_state, const char* caller);

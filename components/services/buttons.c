@@ -29,15 +29,15 @@
 
 static const char* TAG = "buttons";
 
-static EXT_RAM_ATTR int n_buttons;
-static EXT_RAM_ATTR uint32_t buttons_idle_since;
+static EXT_RAM_BSS_ATTR int n_buttons;
+static EXT_RAM_BSS_ATTR uint32_t buttons_idle_since;
 
 #define BUTTON_STACK_SIZE 4096
 #define MAX_BUTTONS 32
 #define DEBOUNCE 50
 #define BUTTON_QUEUE_LEN 10
 
-static EXT_RAM_ATTR struct button_s {
+static EXT_RAM_BSS_ATTR struct button_s {
     void* client;
     int gpio;
     int debounce;
@@ -50,7 +50,7 @@ static EXT_RAM_ATTR struct button_s {
     TimerHandle_t timer;
 } buttons[MAX_BUTTONS];
 
-// can't use EXT_RAM_ATTR for initialized structure
+// can't use EXT_RAM_BSS_ATTR for initialized structure
 static struct {
     int gpio, level;
     struct button_s* button;
@@ -58,7 +58,7 @@ static struct {
 
 static TimerHandle_t polled_timer;
 
-static EXT_RAM_ATTR struct {
+static EXT_RAM_BSS_ATTR struct {
     QueueHandle_t queue;
     void* client;
     rotary_encoder_info_t info;
@@ -66,13 +66,13 @@ static EXT_RAM_ATTR struct {
     rotary_handler handler;
 } rotary;
 
-static EXT_RAM_ATTR struct {
+static EXT_RAM_BSS_ATTR struct {
     RingbufHandle_t rb;
     infrared_handler handler;
 } infrared;
 
-static EXT_RAM_ATTR QueueHandle_t button_queue;
-static EXT_RAM_ATTR QueueSetHandle_t common_queue_set;
+static EXT_RAM_BSS_ATTR QueueHandle_t button_queue;
+static EXT_RAM_BSS_ATTR QueueSetHandle_t common_queue_set;
 
 static void buttons_task(void* arg);
 static void buttons_handler(struct button_s* button, int level);
@@ -82,7 +82,7 @@ static void buttons_handler(struct button_s* button, int level);
  */
 static void common_task_init(void) {
     static DRAM_ATTR StaticTask_t xTaskBuffer __attribute__((aligned(4)));
-    static EXT_RAM_ATTR StackType_t xStack[BUTTON_STACK_SIZE] __attribute__((aligned(4)));
+    static EXT_RAM_BSS_ATTR StackType_t xStack[BUTTON_STACK_SIZE] __attribute__((aligned(4)));
 
     if (!common_queue_set) {
 		ESP_LOGD(TAG,"Creating buttons task with a queue set length of %d",BUTTON_QUEUE_LEN+1);

@@ -42,10 +42,10 @@ pwm_system_t pwm_system = {
     .max = (1 << LEDC_TIMER_13_BIT),
 };
 static sys_sleep_config* sleep_config;
-static EXT_RAM_ATTR uint8_t gpio_exp_count = 0;
-static EXT_RAM_ATTR bool spi_configured = false;
-static EXT_RAM_ATTR bool i2c_configured = false;
-static EXT_RAM_ATTR struct {
+static EXT_RAM_BSS_ATTR uint8_t gpio_exp_count = 0;
+static EXT_RAM_BSS_ATTR bool spi_configured = false;
+static EXT_RAM_BSS_ATTR bool i2c_configured = false;
+static EXT_RAM_BSS_ATTR struct {
     uint64_t wake_gpio, wake_level;
     uint64_t rtc_gpio, rtc_level;
     uint32_t delay, spurious;
@@ -151,7 +151,7 @@ static void sleep_gpio_handler(void* id, button_event_e event, button_press_e mo
  *
  */
 static void sleep_timer(uint32_t now) {
-    static EXT_RAM_ATTR uint32_t last, first;
+    static EXT_RAM_BSS_ATTR uint32_t last, first;
 
     // first chain the calls to pseudo_idle function
     if (sleep_context.idle_chain) sleep_context.idle_chain(now);

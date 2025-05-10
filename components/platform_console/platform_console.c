@@ -41,8 +41,8 @@ static const char* TAG = "console";
 extern bool bypass_network_manager;
 extern void launchsqueezelite();
 
-static EXT_RAM_ATTR QueueHandle_t uart_queue;
-static EXT_RAM_ATTR struct {
+static EXT_RAM_BSS_ATTR QueueHandle_t uart_queue;
+static EXT_RAM_BSS_ATTR struct {
     uint8_t _buf[512];
     StaticRingbuffer_t _ringbuf;
     RingbufHandle_t handle;

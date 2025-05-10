@@ -85,7 +85,7 @@ typedef enum {
 static const char* TAG = "cmd_config";
 extern struct arg_end* getParmsEnd(struct arg_hdr** argtable);
 // bck=<gpio>,ws=<gpio>,do=<gpio>[,mute=<gpio>[:0|1][,model=TAS57xx|TAS5713|AC101|WM8978|I2S][,sda=<gpio>,scl=gpio[,i2c=<addr>]]
-static EXT_RAM_ATTR struct {
+static EXT_RAM_BSS_ATTR struct {
     struct arg_str* model_name;
     struct arg_int* clock;
     struct arg_int* wordselect;
@@ -98,11 +98,11 @@ static EXT_RAM_ATTR struct {
     struct arg_lit* clear;
     struct arg_end* end;
 } i2s_args;
-static EXT_RAM_ATTR struct {
+static EXT_RAM_BSS_ATTR struct {
     struct arg_str* model_config;
     struct arg_end* end;
 } known_model_args;
-static EXT_RAM_ATTR struct {
+static EXT_RAM_BSS_ATTR struct {
     struct arg_rem* rem;
     struct arg_int* A;
     struct arg_int* B;
@@ -125,40 +125,40 @@ static struct {
     struct arg_end* end;
 } ledvu_args;
 // Argument structures for different subcommands
-static EXT_RAM_ATTR struct {
+static EXT_RAM_BSS_ATTR struct {
     struct arg_str* ap_name;
     struct arg_str* password;
     struct arg_end* end;
 } wifi_join_args;
 
-static EXT_RAM_ATTR struct {
+static EXT_RAM_BSS_ATTR struct {
     struct arg_str* ap_name;
     struct arg_end* end;
 } wifi_delete_args;
-static EXT_RAM_ATTR struct {
+static EXT_RAM_BSS_ATTR struct {
     struct arg_str* ap_name;
     struct arg_str* password;
     struct arg_end* end;
 } wifi_add_args;
-static EXT_RAM_ATTR struct {
+static EXT_RAM_BSS_ATTR struct {
     struct arg_end* end;
 } wifi_scan_args, wifi_status_args, wifi_reset_args;
 
-static EXT_RAM_ATTR struct {
+static EXT_RAM_BSS_ATTR struct {
     struct arg_str* sink_name;
     struct arg_str* pin_code;
     //		struct arg_dbl *connect_timeout_delay;
     //		struct arg_dbl *control_delay;
     struct arg_end* end;
 } bt_source_args;
-static EXT_RAM_ATTR struct {
+static EXT_RAM_BSS_ATTR struct {
     struct arg_str* deviceName;
     //	struct arg_int *volume;
     struct arg_int* bitrate;
     struct arg_int* zeroConf;
     struct arg_end* end;
 } cspot_args;
-static EXT_RAM_ATTR struct {
+static EXT_RAM_BSS_ATTR struct {
     struct arg_int* clock;
     struct arg_int* wordselect;
     struct arg_int* data;

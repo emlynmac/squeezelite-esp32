@@ -55,7 +55,7 @@ static const struct rmt_led_param_s {
         {{{1000 / RMT_CLK, 1, 350 / RMT_CLK, 0}}}, 0xff0000, 0x00ff00, scale24},
     {.type = -1}};
 
-static EXT_RAM_ATTR struct led_s {
+static EXT_RAM_BSS_ATTR struct led_s {
     gpio_num_t gpio;
     bool on;
     uint32_t color;
@@ -68,7 +68,7 @@ static EXT_RAM_ATTR struct led_s {
     TimerHandle_t timer;
 } leds[MAX_LED];
 
-// can't use EXT_RAM_ATTR for initialized structure
+// can't use EXT_RAM_BSS_ATTR for initialized structure
 static struct led_config_s {
     int gpio;
     int color;

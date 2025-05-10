@@ -36,8 +36,8 @@ static const char *TAG = "display";
 
 extern const uint8_t default_artwork[]   asm("_binary_note_jpg_start");
 
-static EXT_RAM_ATTR struct {
-	TaskHandle_t task;
+static EXT_RAM_BSS_ATTR struct {
+    TaskHandle_t task;
 	SemaphoreHandle_t mutex;
 	int pause, speed, by;
 	enum { DISPLAYER_DOWN, DISPLAYER_IDLE, DISPLAYER_ACTIVE } state;
@@ -62,7 +62,6 @@ static EXT_RAM_ATTR struct {
 	TickType_t tick;
 } displayer;
 
-    
 static void displayer_task(void *args);
 static void display_sleep(void);
 
@@ -134,8 +133,8 @@ void display_init(char *welcome) {
 	
 	if (init) {
 		static DRAM_ATTR StaticTask_t xTaskBuffer __attribute__ ((aligned (4)));
-		static EXT_RAM_ATTR StackType_t xStack[DISPLAYER_STACK_SIZE] __attribute__ ((aligned (4)));
-		struct GDS_Layout Layout = {
+        static EXT_RAM_BSS_ATTR StackType_t xStack[DISPLAYER_STACK_SIZE] __attribute__((aligned(4)));
+        struct GDS_Layout Layout = {
 			.HFlip = platform->dev.display.common.HFlip,
 			.VFlip = platform->dev.display.common.VFlip,
 			.Rotate = platform->dev.display.common.rotate, 

@@ -46,7 +46,7 @@
 #else
 #pragma message("Runtime stats disabled")
 #endif
-EXT_RAM_ATTR static struct {
+EXT_RAM_BSS_ATTR static struct {
 
     struct arg_str* device;
     // AirPlay device name
@@ -62,30 +62,30 @@ EXT_RAM_ATTR static struct {
     struct arg_lit* all;
     struct arg_end* end;
 } names_args;
-EXT_RAM_ATTR static struct {
+EXT_RAM_BSS_ATTR static struct {
     struct arg_str* name;
     struct arg_lit*reset;
     struct arg_end* end;
 } target_args;
 
-EXT_RAM_ATTR static struct {
+EXT_RAM_BSS_ATTR static struct {
     struct arg_str* confirm;
     struct arg_end* end;
 } reset_config_args;
 
 // Global or static scope
-EXT_RAM_ATTR static struct {
+EXT_RAM_BSS_ATTR static struct {
     struct arg_str* path;
     struct arg_end* end;
 } ls_args;
-// EXT_RAM_ATTR static struct {
+// EXT_RAM_BSS_ATTR static struct {
 //     struct arg_str *component;
 //     struct arg_int *level;
 //     struct arg_end *end;
 // } ls_level;
 
 // Global or static scope
-EXT_RAM_ATTR static struct {
+EXT_RAM_BSS_ATTR static struct {
     struct arg_str* path;
     struct arg_end* end;
 } erase_args;

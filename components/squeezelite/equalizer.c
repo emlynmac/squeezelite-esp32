@@ -18,15 +18,14 @@
 
 static log_level loglevel = lINFO;
 
-static EXT_RAM_ATTR struct {
-	void *handle;
+static EXT_RAM_BSS_ATTR struct {
+    void *handle;
     uint32_t samplerate;
     float volume;
 	float loudness_gain[EQ_BANDS];
 	bool update;
-    sys_equalizer_config *state; 
+    sys_equalizer_config *state;
 } equalizer;
-
 
 #define POLYNOME_COUNT 6
 

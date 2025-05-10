@@ -230,7 +230,7 @@ void monitor_svc_init(void) {
 
     // pseudo-idle callback => don't use FreeRTOS idle callbacks so we can block (should not but ...)
 	StaticTask_t* xTaskBuffer = (StaticTask_t*) heap_caps_malloc(sizeof(StaticTask_t), MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
-	static EXT_RAM_ATTR StackType_t xStack[PSEUDO_IDLE_STACK_SIZE] __attribute__ ((aligned (4)));
-	xTaskCreateStatic( (TaskFunction_t) pseudo_idle, "pseudo_idle", PSEUDO_IDLE_STACK_SIZE,
+    static EXT_RAM_BSS_ATTR StackType_t xStack[PSEUDO_IDLE_STACK_SIZE] __attribute__((aligned(4)));
+    xTaskCreateStatic( (TaskFunction_t) pseudo_idle, "pseudo_idle", PSEUDO_IDLE_STACK_SIZE,
 						NULL, ESP_TASK_PRIO_MIN, xStack, xTaskBuffer );
 }
