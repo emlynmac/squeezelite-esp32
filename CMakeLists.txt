@@ -4,6 +4,7 @@ include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 set(PROJECT_VER $ENV{PROJECT_VER})
 add_definitions(-DMODEL_NAME=SqueezeESP32)
 
+idf_build_set_property(COMPILE_DEFINITIONS "dhcp_network_changed=dhcp_network_changed_link_up" APPEND) # See https://github.com/espressif/esp-idf/issues/14582
 if(NOT DEFINED DEPTH)
 	set(DEPTH "16")
 endif()	

@@ -1,6 +1,6 @@
 idf_component_register( SRC_DIRS .
 						INCLUDE_DIRS .   
-						PRIV_REQUIRES bootloader_support json
+						PRIV_REQUIRES bootloader_support json esp_app_format
  )
  
 target_link_libraries(${COMPONENT_LIB} INTERFACE "-Wl,--undefined=esp_app_desc")	

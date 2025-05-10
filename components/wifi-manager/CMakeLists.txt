@@ -9,8 +9,8 @@ endif()
  
 idf_component_register( SRC_DIRS .  UML-State-Machine-in-C/src
 						INCLUDE_DIRS . UML-State-Machine-in-C/src
-						REQUIRES squeezelite-ota json mdns 
-						PRIV_REQUIRES tools services platform_config esp_common json newlib freertos spi_flash nvs_flash mdns pthread wpa_supplicant platform_console esp_http_server console ${target_requires}
+						REQUIRES squeezelite-ota json mdns esp_wifi esp_eth
+						PRIV_REQUIRES tools services platform_config esp_common esp_netif esp_event esp_timer esp_driver_spi json newlib freertos spi_flash nvs_flash mdns pthread wpa_supplicant platform_console esp_http_server console ${target_requires}
 )
 
 # Define the source and destination directories

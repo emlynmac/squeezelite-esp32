@@ -10,8 +10,10 @@ idf_component_register( SRC_DIRS . external ac101 tas57xx wm8978 cs4265
 									newlib 
 									esp_common 
 									esp-dsp
+									esp_timer
+									esp_rom
 									tools
-						  			platform_config 
+						  		platform_config 
 						 			services 
 									spotify
 						 			raop   

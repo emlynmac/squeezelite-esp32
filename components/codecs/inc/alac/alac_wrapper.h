@@ -11,6 +11,8 @@
 #ifndef __ALAC_WRAPPER_H_
 #define __ALAC_WRAPPER_H_
 
+#include <stdbool.h>
+
 struct alac_codec_s;
 
 #ifdef __cplusplus

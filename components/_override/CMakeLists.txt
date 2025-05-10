@@ -21,4 +21,10 @@ if(IDF_TARGET STREQUAL esp32 AND IDF_VERSION_MAJOR EQUAL 4 AND IDF_VERSION_MINOR
     )
 else()
     message(STATUS "==> NO OVERRIDE <==")
+    # Register dummy component to keep IDF buildchain happy
+    idf_component_register( SRCS ${driver}
+        REQUIRES driver           
+        INCLUDE_DIRS ""
+        PRIV_INCLUDE_DIRS ""
+)
 endif()

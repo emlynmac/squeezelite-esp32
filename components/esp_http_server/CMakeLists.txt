@@ -5,6 +5,6 @@ idf_component_register(
 		SRC_DIRS "${prefix}/src" "${prefix}/src/util"	
 		INCLUDE_DIRS "${prefix}/include"
         PRIV_INCLUDE_DIRS "." "${prefix}/src/port/esp32" "${prefix}/src/util"
-        REQUIRES nghttp # for http_parser.h
+        REQUIRES esp_event http_parser
         PRIV_REQUIRES lwip mbedtls esp_timer
 ) 

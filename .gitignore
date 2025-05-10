@@ -14,6 +14,7 @@ test/.vscode/tasks.json
 test/sdkconfig
 components/wifi-manager/UML-State-Machine-in-C
 *.bak
+managed_components
 
 envfile.txt
 artifacts
