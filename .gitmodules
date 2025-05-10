@@ -11,3 +11,6 @@
 [submodule "components/wifi-manager/webapp/src/bootswatch"]
 	path = components/wifi-manager/webapp/src/bootswatch
 	url = https://github.com/thomaspark/bootswatch.git
+[submodule "tools/protodot"]
+  path = tools/protodot
+	url = https://github.com/seamia/protodot.git
