@@ -92,8 +92,8 @@ static bool init(sys_dac_config *config, i2s_config_t *i2s_config, bool *mck) {
 		ESP_LOGD(TAG, "i2c write %x at %u", tas57xx_init_sequence[i].reg, tas57xx_init_sequence[i].value);
 	}
 
-	i2c_master_stop(i2c_cmd);	
-	esp_err_t res = i2c_master_cmd_begin(config->i2c.port-sys_i2c_port_PORT0, i2c_cmd, 500 / portTICK_RATE_MS);
+	i2c_master_stop(i2c_cmd);
+    esp_err_t res = i2c_master_cmd_begin(config->i2c.port - sys_i2c_port_PORT0, i2c_cmd, 500 / portTICK_PERIOD_MS);
     i2c_cmd_link_delete(i2c_cmd);
 	
 	if (res != ESP_OK) {

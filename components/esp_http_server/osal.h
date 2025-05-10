@@ -30,12 +30,9 @@ extern "C" {
 
 typedef TaskHandle_t othread_t;
 
-static inline int httpd_os_thread_create(othread_t *thread,
-                                 const char *name, uint16_t stacksize, int prio,
-                                 void (*thread_routine)(void *arg), void *arg,
-                                 BaseType_t core_id)
-{
-	StaticTask_t *xTaskBuffer = (StaticTask_t*) heap_caps_malloc(sizeof(StaticTask_t), (MALLOC_CAP_INTERNAL|MALLOC_CAP_8BIT));
+static inline int httpd_os_thread_create(othread_t* thread, const char* name, uint16_t stacksize, int prio, void (*thread_routine)(void* arg),
+    void* arg, BaseType_t core_id, uint32_t task_caps) {
+    StaticTask_t *xTaskBuffer = (StaticTask_t*) heap_caps_malloc(sizeof(StaticTask_t), (MALLOC_CAP_INTERNAL|MALLOC_CAP_8BIT));
 	StackType_t *xStack = heap_caps_malloc(stacksize,(MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT));
 
 	*thread = xTaskCreateStaticPinnedToCore(thread_routine, name, stacksize, arg, prio, xStack,xTaskBuffer,core_id);
@@ -51,10 +48,7 @@ static inline void httpd_os_thread_delete(void)
     vTaskDelete(xTaskGetCurrentTaskHandle());
 }
 
-static inline void httpd_os_thread_sleep(int msecs)
-{
-    vTaskDelay(msecs / portTICK_RATE_MS);
-}
+static inline void httpd_os_thread_sleep(int msecs) { vTaskDelay(msecs / portTICK_PERIOD_MS); }
 
 static inline othread_t httpd_os_thread_handle(void)
 {
