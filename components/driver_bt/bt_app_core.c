@@ -122,7 +122,7 @@ static void bt_app_task_handler(void* arg) {
     running = true;
 
     while (running) {
-        if (pdTRUE == xQueueReceive(s_bt_app_task_queue, &msg, (portTickType)portMAX_DELAY)) {
+        if (pdTRUE == xQueueReceive(s_bt_app_task_queue, &msg, (TickType_t)portMAX_DELAY)) {
             ESP_LOGV(TAG, "%s, sig 0x%x, 0x%x", __func__, msg.sig, msg.event);
 
             switch (msg.sig) {
