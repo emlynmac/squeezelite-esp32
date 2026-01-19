@@ -10,14 +10,34 @@
  */
 
 #include "freertos/FreeRTOS.h"
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
+#include "driver/i2s_std.h"
+#else
 #include "driver/i2s.h"
+#endif
 #include "driver/i2c.h"
 
 typedef enum { ADAC_ON = 0, ADAC_STANDBY, ADAC_OFF } adac_power_e;
 
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
+// For ESP-IDF 5.x, use compatibility config structure
+typedef struct {
+	uint32_t sample_rate;
+	i2s_data_bit_width_t bits_per_sample;
+	i2s_slot_mode_t channel_format;
+	uint32_t dma_buf_len;
+	uint32_t dma_buf_count;
+	bool use_apll;
+	bool tx_desc_auto_clear;
+	int fixed_mclk;  // Custom field for precise MCLK control
+} i2s_config_param_t;
+#else
+typedef i2s_config_t i2s_config_param_t;
+#endif
+
 struct adac_s {
 	char *model;
-	bool (*init)(char *config, int i2c_port_num, i2s_config_t *i2s_config, bool *mck);
+	bool (*init)(char *config, int i2c_port_num, i2s_config_param_t *i2s_config, bool *mck);
 	void (*deinit)(void);
 	void (*power)(adac_power_e mode);
 	void (*speaker)(bool active);
