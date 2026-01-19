@@ -631,21 +631,21 @@ See squeezelite command line, but keys options are
 A simple alternative to building the project's binaries is to leverage the same docker image that is being used on the GitHub Actions to build our releases. The instructions below assume that you have cloned  the squeezelite-esp32 code that you want to build locally and that you have opened a command line/bash session in the folder that contains the code. 
 Pull the most recent docker image for the environment: 
 ```
-docker pull sle118/squeezelite-esp32-idfv435
+docker pull espressif/idf:v5.5
 ```
 Then run the container interactively :
 ```
 for windows:
-docker run -v %cd%:/project -w /project -it sle118/squeezelite-esp32-idfv435
+docker run -v %cd%:/project -w /project -it espressif/idf:v5.5
 for linux:
-docker run -it -v `pwd`:/workspace/squeezelite-esp32 sle118/squeezelite-esp32-idfv435
+docker run -it -v `pwd`:/project -w /project espressif/idf:v5.5
 ```
 The above command will mount this repo into the docker container and start a bash terminal. From there, simply run idf.py build to build, etc. Note that at the time of writing these lines, flashing is not possible for docker running under windows https://github.com/docker/for-win/issues/1018.
 
 ### Manual Install of ESP-IDF
 First you need git and python (e.g 3.10.x), install these and let it add to system path.
 
-**Use the esp-idf 4.3.5 https://github.com/espressif/esp-idf/tree/release/v4.3.5 ** or the 4.4.5 (and above version) if you want to build for esp32-s3. You should clone recursively the whole branch (at the version you need) `git clone -b v4.3.5 https://github.com/espressif/esp-idf --recursive`and run the installer (`install.bat [esp32[,esp32s3]]` from there. Some Windows version (at least) have now a SSL certificate issue. You can workaround this by editing idf-tools.py and adding the following under ìmport ssl`
+**Use the esp-idf 5.5 https://github.com/espressif/esp-idf/tree/release/v5.5 ** for ESP32, ESP32-S3, and other supported targets. You should clone recursively the whole branch (at the version you need) `git clone -b v5.5 https://github.com/espressif/esp-idf --recursive` and run the installer (`install.bat [esp32[,esp32s3]]` from there. Some Windows version (at least) have now a SSL certificate issue. You can workaround this by editing idf-tools.py and adding the following under ìmport ssl`
 ```
 import ssl
 ssl._create_default_https_context = ssl._create_unverified_context

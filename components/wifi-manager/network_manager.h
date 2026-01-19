@@ -312,7 +312,7 @@ void network_manager_initialise_mdns();
 bool network_is_wifi_prioritized();
 void network_set_timer(uint16_t duration, const char * tag);
 void network_set_hostname(esp_netif_t * netif);
-esp_err_t network_get_ip_info_for_netif(esp_netif_t* netif, tcpip_adapter_ip_info_t* ipInfo);
+esp_err_t network_get_ip_info_for_netif(esp_netif_t* netif, esp_netif_ip_info_t* ipInfo);
 void network_start_stop_dhcp_client(esp_netif_t* netif, bool start);
 void network_start_stop_dhcps(esp_netif_t* netif, bool start);
 void network_prioritize_wifi(bool activate);

@@ -70,22 +70,23 @@ in_addr_t get_localhost(char **name)
 	}
 	else return INADDR_ANY;
 #else
-	tcpip_adapter_ip_info_t ipInfo; 
-	tcpip_adapter_if_t if_type = TCPIP_ADAPTER_IF_STA;
+	esp_netif_ip_info_t ipInfo; 
+	esp_netif_t *netif = network_get_active_interface();
 
 	// then get IP address
- 	tcpip_adapter_get_ip_info(if_type, &ipInfo);
+	if (netif) esp_netif_get_ip_info(netif, &ipInfo);
+	else ipInfo.ip.addr = INADDR_ANY;
 	
 	// we might be in AP mode
 	if (ipInfo.ip.addr == INADDR_ANY) {
-		if_type = TCPIP_ADAPTER_IF_AP;
-		tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_AP, &ipInfo);
+		netif = network_wifi_get_ap_interface();
+		if (netif) esp_netif_get_ip_info(netif, &ipInfo);
 	}
 
 	// get hostname if required
-	if (name) {
+	if (name && netif) {
 		const char *hostname;
-		tcpip_adapter_get_hostname(if_type, &hostname);
+		esp_netif_get_hostname(netif, &hostname);
 		*name = strdup(hostname);
 	}	
 

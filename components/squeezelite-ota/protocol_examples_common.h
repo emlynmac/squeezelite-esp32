@@ -15,15 +15,21 @@ extern "C" {
 
 #include "esp_err.h"
 #include "esp_netif.h"
-// IDF-V4++ #include "esp_netif.h"
 
 #ifdef CONFIG_EXAMPLE_CONNECT_ETHERNET
-#define EXAMPLE_INTERFACE TCPIP_ADAPTER_IF_ETH
+#define EXAMPLE_INTERFACE get_example_netif()
 #endif
 
 #ifdef CONFIG_EXAMPLE_CONNECT_WIFI
-#define EXAMPLE_INTERFACE TCPIP_ADAPTER_IF_STA
+#define EXAMPLE_INTERFACE get_example_netif()
 #endif
+
+/**
+ * @brief Get the example network interface
+ *
+ * @return esp_netif_t*
+ */
+esp_netif_t* get_example_netif(void);
 
 /**
  * @brief Configure Wi-Fi or Ethernet, connect, wait for IP
