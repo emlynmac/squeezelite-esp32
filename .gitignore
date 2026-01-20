@@ -19,3 +19,4 @@ envfile.txt
 artifacts
 web-installer
 client_info.h
+managed_components/
