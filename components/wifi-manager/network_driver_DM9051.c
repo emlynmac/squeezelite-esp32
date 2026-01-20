@@ -1,16 +1,16 @@
 #include "esp_eth.h"
 #include "network_ethernet.h"
 
-static EXT_RAM_ATTR network_ethernet_driver_t DM9051;
-static EXT_RAM_ATTR spi_device_interface_config_t devcfg;
-static EXT_RAM_ATTR esp_netif_config_t cfg_spi;
-static EXT_RAM_ATTR esp_netif_inherent_config_t esp_netif_config;
+static EXT_RAM_BSS_ATTR network_ethernet_driver_t DM9051;
+static EXT_RAM_BSS_ATTR spi_device_interface_config_t devcfg;
+static EXT_RAM_BSS_ATTR esp_netif_config_t cfg_spi;
+static EXT_RAM_BSS_ATTR esp_netif_inherent_config_t esp_netif_config;
 
 static esp_err_t start(spi_device_handle_t spi_handle, eth_config_t* ethernet_config) {
 #ifdef CONFIG_ETH_SPI_ETHERNET_DM9051
     eth_phy_config_t phy_config = ETH_PHY_DEFAULT_CONFIG();
     eth_mac_config_t mac_config = ETH_MAC_DEFAULT_CONFIG();
-    eth_dm9051_config_t eth_config = ETH_DM9051_DEFAULT_CONFIG(spi_handle);
+    eth_dm9051_config_t eth_config = ETH_DM9051_DEFAULT_CONFIG(ethernet_config->host, &devcfg);
     // we assume that isr has been installed already
     eth_config.int_gpio_num = ethernet_config->intr;
     phy_config.phy_addr = -1;

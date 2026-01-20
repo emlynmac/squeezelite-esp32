@@ -7,8 +7,8 @@
    CONDITIONS OF ANY KIND, either express or implied.
 */
 #include "cmd_config.h"
-#include "accessors.h"
 #include "adac.h"
+#include "accessors.h"
 #include "argtable3/argtable3.h"
 #include "cJSON.h"
 #include "cmd_i2ctools.h"

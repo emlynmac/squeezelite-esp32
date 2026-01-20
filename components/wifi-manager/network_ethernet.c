@@ -9,6 +9,7 @@
 #include "tools.h"
 #include "accessors.h"
 #include "esp_log.h"
+#include "esp_mac.h"
 #include "globdefs.h"
 
 static char TAG[] = "network_ethernet";
@@ -85,7 +86,7 @@ bool network_ethernet_wait_for_link(uint16_t max_wait_ms){
     return link_up;
 }
 
-static void ETH_Timeout(void* timer_id);
+static void ETH_Timeout(TimerHandle_t xTimer);
 void destroy_network_ethernet() {
 }
 
@@ -111,7 +112,7 @@ void init_network_ethernet() {
     network_ethernet_print_config(&eth);
 
     eth_netif = esp_netif_new(network_driver->cfg_netif);
-    esp_eth_set_default_handlers(eth_netif);
+    // esp_eth_set_default_handlers is no longer needed in ESP-IDF 5.x
     esp_event_handler_register(ETH_EVENT, ESP_EVENT_ANY_ID, &eth_event_handler, NULL);
     ethernet_event_group = xEventGroupCreate();
 	xEventGroupClearBits(ethernet_event_group, LINK_UP_BIT);
@@ -127,7 +128,7 @@ void init_network_ethernet() {
     }
     if(err == ESP_OK){
         uint8_t mac_address[6];
-        esp_read_mac(mac_address,ESP_MAC_ETH);
+        esp_read_mac(mac_address, ESP_MAC_ETH);
         char * mac_string=network_manager_alloc_get_mac_string(mac_address);
         ESP_LOGD(TAG,"Assigning mac address %s to ethernet interface", STR_OR_BLANK(mac_string));
         FREE_AND_NULL(mac_string);
@@ -188,7 +189,7 @@ static void eth_event_handler(void* arg, esp_event_base_t event_base, int32_t ev
     } 
 }
 
-static void ETH_Timeout(void* timer_id) {
+static void ETH_Timeout(TimerHandle_t xTimer) {
     network_async_fail();
 }
 

@@ -76,7 +76,7 @@ static bt_cmd_vcb_t cmd_handler_chain;
 
 #define METADATA_LEN 128
 
-static EXT_RAM_ATTR struct {
+static EXT_RAM_BSS_ATTR struct {
 	char artist[METADATA_LEN + 1];
 	char album[METADATA_LEN + 1];
 	char title[METADATA_LEN + 1];

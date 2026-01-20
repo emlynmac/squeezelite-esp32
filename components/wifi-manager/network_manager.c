@@ -18,6 +18,7 @@ Copyright (c) 2017-2021 Sebastien L
 #include "dns_server.h"
 #include "esp_log.h"
 #include "esp_system.h"
+#include "esp_mac.h"
 #include "freertos/FreeRTOS.h"
 #include "platform_esp32.h"
 
@@ -71,7 +72,7 @@ network_t NM;
 
 //! Create and initialize the array of state machines.
 state_machine_t* const SM[] = {(state_machine_t*)&NM};
-static void network_timer_cb(void* timer_id);
+static void network_timer_cb(TimerHandle_t xTimer);
 int get_root_id(const state_t *  state);
 const state_t* get_root( const state_t* const state);
 static void network_task(void* pvParameters);
@@ -588,7 +589,7 @@ network_t* network_get_state_machine() {
     return &NM;
 }
 
-static void network_timer_cb(void* timer_id) {
+static void network_timer_cb(TimerHandle_t xTimer) {
     network_async_timer();
 }
 esp_netif_t* network_get_active_interface() {

@@ -22,7 +22,7 @@
 #define CONFIG_AIRPLAY_NAME		"ESP32-AirPlay"
 #endif
 
-static EXT_RAM_ATTR struct raop_cb_s {
+static EXT_RAM_BSS_ATTR struct raop_cb_s {
 	raop_cmd_vcb_t cmd;
 	raop_data_cb_t data;
 } raop_cbs;

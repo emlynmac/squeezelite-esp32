@@ -5,8 +5,7 @@ endif()
 
 idf_component_register( SRC_DIRS . external ac101 tas57xx wm8978
 						INCLUDE_DIRS .  ac101 
-						PRIV_REQUIRES 	
-									codecs
+						REQUIRES driver
 									newlib 
 									esp_common 
 									esp-dsp

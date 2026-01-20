@@ -13,7 +13,9 @@
 #include "esp_log.h"
 #include "esp_console.h"
 #include "esp_system.h"
-#include "esp_spi_flash.h"
+#include "esp_chip_info.h"
+#include "spi_flash_mmap.h"
+#include "esp_flash.h"
 #include "driver/rtc_io.h"
 #include "driver/uart.h"
 #include "argtable3/argtable3.h"
@@ -38,11 +40,11 @@
 #else 
 #pragma message("Runtime stats disabled")
 #endif
-EXT_RAM_ATTR static struct {
+EXT_RAM_BSS_ATTR static struct {
 	struct arg_str *name;
 	struct arg_end *end;
 } name_args;
-EXT_RAM_ATTR static struct {
+EXT_RAM_BSS_ATTR static struct {
     #if CONFIG_CSPOT_SINK	
     struct arg_lit *cspot;
     #endif     
@@ -118,6 +120,8 @@ static int get_version(int argc, char **argv)
 {
     esp_chip_info_t info;
     esp_chip_info(&info);
+    uint32_t flash_size;
+    esp_flash_get_size(NULL, &flash_size);
     cmd_send_messaging(argv[0],MESSAGING_INFO,
     "IDF Version:%s\r\n"
     "Chip info:\r\n"
@@ -130,7 +134,7 @@ static int get_version(int argc, char **argv)
 		info.features & CHIP_FEATURE_BLE ? "/BLE" : "",
 		info.features & CHIP_FEATURE_BT ? "/BT" : "",
 		info.features & CHIP_FEATURE_EMB_FLASH ? "/Embedded-Flash:" : "/External-Flash:",
-		spi_flash_get_chip_size() / (1024 * 1024), " MB", info.revision);
+		flash_size / (1024 * 1024), " MB", info.revision);
     return 0;
 }
 

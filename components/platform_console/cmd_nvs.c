@@ -35,37 +35,37 @@ extern esp_err_t network_wifi_erase_known_ap();
 static const char *ARG_TYPE_STR = "type can be: i8, u8, i16, u16 i32, u32 i64, u64, str, blob";
 static const char * TAG = "cmd_nvs";
 
-EXT_RAM_ATTR static struct {
+EXT_RAM_BSS_ATTR static struct {
     struct arg_str *key;
     struct arg_str *type;
     struct arg_str *value;
     struct arg_end *end;
 } set_args;
 
-EXT_RAM_ATTR static struct {
+EXT_RAM_BSS_ATTR static struct {
     struct arg_str *key;
     struct arg_str *type;
     struct arg_end *end;
 } get_args;
 
-EXT_RAM_ATTR static struct {
+EXT_RAM_BSS_ATTR static struct {
     struct arg_str *key;
     struct arg_end *end;
 } erase_args;
 
-EXT_RAM_ATTR static struct {
+EXT_RAM_BSS_ATTR static struct {
     struct arg_str *namespace;
     struct arg_end *end;
 } erase_all_args;
 
-EXT_RAM_ATTR static struct {
+EXT_RAM_BSS_ATTR static struct {
     struct arg_str *partition;
     struct arg_str *namespace;
     struct arg_str *type;
     struct arg_end *end;
 } list_args;
 
-EXT_RAM_ATTR static struct {
+EXT_RAM_BSS_ATTR static struct {
     struct arg_lit *legacy;
     struct arg_lit *ap_list;
     struct arg_end *end;
@@ -467,8 +467,9 @@ static int list(const char *part, const char *name, const char *str_type)
 {
     nvs_type_t type = str_to_type(str_type);
 
-    nvs_iterator_t it = nvs_entry_find(part, NULL, type);
-    if (it == NULL) {
+    nvs_iterator_t it = NULL;
+    esp_err_t err = nvs_entry_find(part, NULL, type, &it);
+    if (err != ESP_OK || it == NULL) {
     	log_send_messaging(MESSAGING_ERROR, "No such enty was found");
         return 1;
     }
@@ -476,12 +477,14 @@ static int list(const char *part, const char *name, const char *str_type)
     do {
         nvs_entry_info_t info;
         nvs_entry_info(it, &info);
-        it = nvs_entry_next(it);
-
+        
         log_send_messaging(MESSAGING_INFO, "namespace '%s', key '%s', type '%s' \n",
                info.namespace_name, info.key, type_to_str(info.type));
-    } while (it != NULL);
+        
+        err = nvs_entry_next(&it);
+    } while (err == ESP_OK && it != NULL);
 
+    nvs_release_iterator(it);
     return 0;
 }
 static int list_entries(int argc, char **argv)

@@ -24,6 +24,9 @@ typedef struct {
     int mck_io_num;
 } i2s_pin_config_t;
 
+// Only define i2c_config_t stub if legacy driver/i2c.h isn't included
+// I2C_MODE_MASTER is defined in the legacy driver/i2c.h
+#ifndef I2C_MODE_MASTER
 typedef struct {
     int mode;
     int sda_io_num;
@@ -32,6 +35,8 @@ typedef struct {
     int scl_pullup_en;
     int master_clk_speed;
 } i2c_config_t;
+#endif
+
 #include "cJSON.h"
 extern const char *i2c_name_type;
 extern const char *spi_name_type;

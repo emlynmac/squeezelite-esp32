@@ -111,7 +111,7 @@ static void initialise_wifi(void)
 	led_blink(LED_GREEN, 250, 250);
 }
 
-static void wifi_join(void *arg)
+static void wifi_join(TimerHandle_t xTimer)
 {
 	const char *ssid = join_args.ssid->sval[0];
     const char *pass = join_args.password->sval[0];

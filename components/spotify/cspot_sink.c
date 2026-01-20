@@ -18,9 +18,9 @@
 #include "cspot_private.h"
 #include "cspot_sink.h"
 
-char EXT_RAM_ATTR deviceId[16];
+char EXT_RAM_BSS_ATTR deviceId[16];
 
-static EXT_RAM_ATTR struct cspot_cb_s {
+static EXT_RAM_BSS_ATTR struct cspot_cb_s {
 	cspot_cmd_vcb_t cmd;
 	cspot_data_cb_t data;
 } cspot_cbs;

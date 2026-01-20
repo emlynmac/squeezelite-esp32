@@ -99,7 +99,7 @@ static void squeezelite_thread(void *arg){
 
 static int launchsqueezelite(int argc, char **argv) {
 	static DRAM_ATTR StaticTask_t xTaskBuffer __attribute__ ((aligned (4)));
-	static EXT_RAM_ATTR StackType_t xStack[SQUEEZELITE_THREAD_STACK_SIZE] __attribute__ ((aligned (4)));
+	static EXT_RAM_BSS_ATTR StackType_t xStack[SQUEEZELITE_THREAD_STACK_SIZE] __attribute__ ((aligned (4)));
 	static bool isRunning = false;
 
 	if (isRunning) {

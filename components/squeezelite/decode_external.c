@@ -39,7 +39,7 @@ static bool enable_airplay;
 
 static raop_event_t	raop_state;
 
-static EXT_RAM_ATTR struct {
+static EXT_RAM_BSS_ATTR struct {
 	bool enabled;
 	int sum, count, win, errors[SYNC_WIN_SLOW];
 	s32_t len;

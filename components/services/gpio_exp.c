@@ -141,10 +141,10 @@ static const struct gpio_exp_model_s {
 	  .write = aw9523_write, },
 };
 
-static EXT_RAM_ATTR uint8_t n_expanders;
-static EXT_RAM_ATTR QueueHandle_t message_queue;
-static EXT_RAM_ATTR gpio_exp_t expanders[4];
-static EXT_RAM_ATTR TaskHandle_t service_task;
+static EXT_RAM_BSS_ATTR uint8_t n_expanders;
+static EXT_RAM_BSS_ATTR QueueHandle_t message_queue;
+static EXT_RAM_BSS_ATTR gpio_exp_t expanders[4];
+static EXT_RAM_BSS_ATTR TaskHandle_t service_task;
 
 /******************************************************************************
  * Retrieve base from an expander reference
@@ -201,7 +201,7 @@ gpio_exp_t* gpio_exp_create(const gpio_exp_config_t *config) {
 	if (!message_queue) {
 		// we allocate TCB but stack is static to avoid SPIRAM fragmentation
 		StaticTask_t* xTaskBuffer = (StaticTask_t*) heap_caps_malloc(sizeof(StaticTask_t), MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
-		static EXT_RAM_ATTR StackType_t xStack[4*1024] __attribute__ ((aligned (4)));
+		static EXT_RAM_BSS_ATTR StackType_t xStack[4*1024] __attribute__ ((aligned (4)));
 
 		message_queue = xQueueCreate(4, sizeof(queue_request_t));
 		service_task = xTaskCreateStatic(service_handler, "gpio_expander", sizeof(xStack), NULL, ESP_TASK_PRIO_MIN + 1, xStack, xTaskBuffer);
