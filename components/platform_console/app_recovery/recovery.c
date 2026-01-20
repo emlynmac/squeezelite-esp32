@@ -2,7 +2,7 @@
 #include <string.h>
 #include "application_name.h"
 #include "esp_err.h"
-#include "esp_app_format.h"
+#include "esp_app_desc.h"
 
 extern esp_err_t process_recovery_ota(const char * bin_url, char * bin_buffer, uint32_t length);
 

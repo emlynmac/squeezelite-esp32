@@ -3,6 +3,7 @@
 #endif
 #include "network_wifi.h"
 #include <string.h>
+#include <sys/queue.h>
 #include "cJSON.h"
 #include "dns_server.h"
 #include "esp_event.h"
@@ -196,7 +197,7 @@ esp_err_t network_wifi_add_ap_from_sta_copy(const wifi_sta_config_t* sta) {
         ESP_LOGE(TAG, "Invalid access point entry");
         return ESP_ERR_INVALID_ARG;
     }
-    if (!sta->ssid || strlen((char*)sta->ssid) == 0) {
+    if (strlen((char*)sta->ssid) == 0) {
         ESP_LOGE(TAG, "Invalid access point ssid");
         return ESP_ERR_INVALID_ARG;
     }
@@ -573,12 +574,13 @@ void network_wifi_load_known_access_points() {
         ESP_LOGW(TAG, "Access points already loaded");
         return;
     }
-    nvs_iterator_t it = nvs_entry_find(NVS_DEFAULT_PART_NAME, ap_list_nsv_namespace, NVS_TYPE_ANY);
-    if (it == NULL) {
+    nvs_iterator_t it = NULL;
+    esp_err_t err = nvs_entry_find(NVS_DEFAULT_PART_NAME, ap_list_nsv_namespace, NVS_TYPE_ANY, &it);
+    if (err != ESP_OK) {
         ESP_LOGW(TAG, "No known access point found");
         return;
     }
-    do {
+    while (err == ESP_OK && it != NULL) {
         nvs_entry_info_t info;
         nvs_entry_info(it, &info);
         if (strstr(info.namespace_name, ap_list_nsv_namespace)) {
@@ -590,8 +592,9 @@ void network_wifi_load_known_access_points() {
             }
             FREE_AND_NULL(value);
         }
-        it = nvs_entry_next(it);
-    } while (it != NULL);
+        err = nvs_entry_next(&it);
+    }
+    nvs_release_iterator(it);
 
     return;
 }

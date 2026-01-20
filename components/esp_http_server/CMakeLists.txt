@@ -5,6 +5,6 @@ idf_component_register(
 		SRC_DIRS "${prefix}/src" "${prefix}/src/util"	
 		INCLUDE_DIRS "${prefix}/include"
         PRIV_INCLUDE_DIRS "." "${prefix}/src/port/esp32" "${prefix}/src/util"
-        REQUIRES nghttp # for http_parser.h
+        REQUIRES http_parser esp_event # for http_parser.h (was nghttp in ESP-IDF 4.x) and esp_event.h
         PRIV_REQUIRES lwip mbedtls esp_timer
 ) 

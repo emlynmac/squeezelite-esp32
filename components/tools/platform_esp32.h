@@ -21,6 +21,8 @@
  
 #pragma once
 
+#include <pthread.h>
+#include <netinet/in.h>
 #include "esp_pthread.h"
 #include "esp_log.h"
 #ifndef SQUEEZELITE_ESP32_RELEASE_URL

@@ -106,11 +106,12 @@ esp_err_t nvs_load_config() {
     size_t malloc_int = heap_caps_get_free_size(MALLOC_CAP_INTERNAL);
     size_t malloc_spiram = heap_caps_get_free_size(MALLOC_CAP_SPIRAM);
 
-    nvs_iterator_t it = nvs_entry_find(settings_partition, NULL, NVS_TYPE_ANY);
-    if (it == NULL) {
+    nvs_iterator_t it = NULL;
+    err = nvs_entry_find(settings_partition, NULL, NVS_TYPE_ANY, &it);
+    if (err != ESP_OK) {
         ESP_LOGW(TAG, "empty nvs partition %s, namespace %s", settings_partition, current_namespace);
     }
-    while (it != NULL) {
+    while (err == ESP_OK && it != NULL) {
         nvs_entry_info(it, &info);
 
         if (strstr(info.namespace_name, current_namespace)) {
@@ -141,14 +142,16 @@ esp_err_t nvs_load_config() {
 				void* value = get_nvs_value_alloc(info.type, info.key);
 				if (value == NULL) {
 					ESP_LOGE(TAG, "nvs read failed.");
+					nvs_release_iterator(it);
 					return ESP_FAIL;
 				}
 				config_set_value(info.type, info.key, value);
 				free(value);
 			}
         }
-        it = nvs_entry_next(it);
+        err = nvs_entry_next(&it);
     }
+    nvs_release_iterator(it);
     char* json_string = config_alloc_get_json(false);
     if (json_string != NULL) {
         ESP_LOGD(TAG, "config json : %s\n", json_string);

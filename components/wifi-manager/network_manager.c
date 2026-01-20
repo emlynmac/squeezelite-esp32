@@ -10,6 +10,7 @@ Copyright (c) 2017-2021 Sebastien L
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/queue.h>
 #include "network_ethernet.h"
 #include "network_status.h"
 #include "network_wifi.h"
@@ -59,8 +60,7 @@ typedef struct network_callback {
     nm_state_t state;
     int sub_state;
     const char* from;
-    SLIST_ENTRY(network_callback)
-    next;  //!< next callback
+    SLIST_ENTRY(network_callback) next;  //!< next callback
 } network_callback_t;
 
 /** linked list of command structures */

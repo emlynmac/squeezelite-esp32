@@ -286,7 +286,8 @@ cJSON * network_manager_clear_ap_list_json(cJSON **old);
 /**
  * @brief A standard wifi event handler as recommended by Espressif
  */
-esp_err_t network_manager_event_handler(void *ctx, system_event_t *event);
+// Obsolete in ESP-IDF 5.x - event system changed
+// esp_err_t network_manager_event_handler(void *ctx, system_event_t *event);
 
 
 

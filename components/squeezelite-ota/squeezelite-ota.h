@@ -6,6 +6,7 @@
  */
 
 #pragma once
+#include <netinet/in.h>
 #include "esp_attr.h"
 #include "esp_image_format.h"
 #include "esp_ota_ops.h"

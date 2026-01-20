@@ -112,7 +112,10 @@ char * http_alloc_get_socket_address(httpd_req_t *req, u8_t local, in_port_t * p
 			inet_ntop(addr.sa.sa_family, ip_addr, ipstr, INET6_ADDRSTRLEN);
 			ESP_LOGV_LOC(TAG,"Processing an IPV6 address : %s", ipstr);
 			*portl =  addr.sin6.sin6_port;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Warray-bounds"
 			unmap_ipv4_mapped_ipv6(ip_2_ip4(ip_addr), ip_2_ip6(ip_addr));
+#pragma GCC diagnostic pop
 		}
 		else {
 			ip_addr = (ip_addr_t *)&(addr.sin.sin_addr);
@@ -166,7 +169,7 @@ bool is_captive_portal_host_name(httpd_req_t *req){
 			memset(ap_ip_address, 0x00, IP4ADDR_STRLEN_MAX);
 			if(ap_ip_address){
 				ESP_LOGD_LOC(TAG,  "Converting soft ip address to string");
-				ip4addr_ntoa_r(&ip_info.ip, ap_ip_address, IP4ADDR_STRLEN_MAX);
+				ip4addr_ntoa_r((const ip4_addr_t*)&ip_info.ip, ap_ip_address, IP4ADDR_STRLEN_MAX);
 				ESP_LOGD_LOC(TAG,"AP interface is up and has ip address %s ", ap_ip_address);
 			}
 		}
@@ -930,7 +933,7 @@ char * get_ap_ip_address(){
 		}
 		else {
 			ESP_LOGV_LOC(TAG,  "Converting soft ip address to string");
-			ip4addr_ntoa_r(&ip_info.ip, ap_ip_address, IP4ADDR_STRLEN_MAX);
+			ip4addr_ntoa_r((const ip4_addr_t*)&ip_info.ip, ap_ip_address, IP4ADDR_STRLEN_MAX);
 			ESP_LOGD_LOC(TAG,"AP interface is up and has ip address %s ", ap_ip_address);
 		}
 	}

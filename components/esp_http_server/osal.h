@@ -33,12 +33,12 @@ typedef TaskHandle_t othread_t;
 static inline int httpd_os_thread_create(othread_t *thread,
                                  const char *name, uint16_t stacksize, int prio,
                                  void (*thread_routine)(void *arg), void *arg,
-                                 BaseType_t core_id)
+                                 BaseType_t core_id, uint32_t caps)
 {
 	StaticTask_t *xTaskBuffer = (StaticTask_t*) heap_caps_malloc(sizeof(StaticTask_t), (MALLOC_CAP_INTERNAL|MALLOC_CAP_8BIT));
-	StackType_t *xStack = heap_caps_malloc(stacksize,(MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT));
+	StackType_t *xStack = heap_caps_malloc(stacksize, caps);
 
-	*thread = xTaskCreateStaticPinnedToCore(thread_routine, name, stacksize, arg, prio, xStack,xTaskBuffer,core_id);
+	*thread = xTaskCreateStaticPinnedToCore(thread_routine, name, stacksize, arg, prio, xStack, xTaskBuffer, core_id);
     if (*thread) {
         return OS_SUCCESS;
     }
@@ -53,7 +53,7 @@ static inline void httpd_os_thread_delete(void)
 
 static inline void httpd_os_thread_sleep(int msecs)
 {
-    vTaskDelay(msecs / portTICK_RATE_MS);
+    vTaskDelay(msecs / portTICK_PERIOD_MS);
 }
 
 static inline othread_t httpd_os_thread_handle(void)

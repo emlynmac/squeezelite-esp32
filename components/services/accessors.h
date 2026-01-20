@@ -9,10 +9,29 @@
 #pragma once
 
 #include "esp_system.h"
-#include "driver/i2c.h"
-#include "driver/i2s.h"
+#include "driver/i2c_master.h"
+#include "driver/i2s_types.h"
 #include "driver/spi_master.h"
 #include "gpio_exp.h"
+
+// Legacy type compatibility stubs for ESP-IDF 5.x migration
+// TODO: These need proper migration to new driver APIs
+typedef struct {
+    int bck_io_num;
+    int ws_io_num;
+    int data_out_num;
+    int data_in_num;
+    int mck_io_num;
+} i2s_pin_config_t;
+
+typedef struct {
+    int mode;
+    int sda_io_num;
+    int scl_io_num;
+    int sda_pullup_en;
+    int scl_pullup_en;
+    int master_clk_speed;
+} i2c_config_t;
 #include "cJSON.h"
 extern const char *i2c_name_type;
 extern const char *spi_name_type;

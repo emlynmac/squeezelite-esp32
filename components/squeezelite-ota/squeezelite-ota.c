@@ -322,6 +322,9 @@ esp_err_t _http_event_handler(esp_http_client_event_t *evt)
     case HTTP_EVENT_DISCONNECTED:
         ESP_LOGD(TAG, "HTTP_EVENT_DISCONNECTED");
         break;
+    case HTTP_EVENT_REDIRECT:
+        ESP_LOGD(TAG, "HTTP_EVENT_REDIRECT");
+        break;
     }
     return ESP_OK;
 }
@@ -414,9 +417,9 @@ esp_err_t _erase_last_boot_app_partition(const esp_partition_t *ota_partition)
 		single_pass_size = OTA_FLASH_ERASE_BLOCK;
 	}
 
-	if(single_pass_size % SPI_FLASH_SEC_SIZE !=0){
-		uint32_t temp_single_pass_size = single_pass_size-(single_pass_size % SPI_FLASH_SEC_SIZE);
-		ESP_LOGW(TAG,"Invalid erase block size of %u. Value should be a multiple of %d and will be adjusted to %u.", single_pass_size, SPI_FLASH_SEC_SIZE,temp_single_pass_size);
+	if(single_pass_size % 4096 !=0){
+		uint32_t temp_single_pass_size = single_pass_size-(single_pass_size % 4096);
+		ESP_LOGW(TAG,"Invalid erase block size of %u. Value should be a multiple of %d and will be adjusted to %u.", single_pass_size, 4096,temp_single_pass_size);
 		single_pass_size=temp_single_pass_size;
 	}
 	ESP_LOGD(TAG,"Erasing flash partition of size %u in blocks of %d bytes", ota_partition->size, single_pass_size);
