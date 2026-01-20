@@ -35,7 +35,6 @@
 #include "esp_attr.h"
 #include "soc/uart_struct.h"
 #include "driver/uart.h"
-#include "config.h"
 #include "nvs_utilities.h"
 #include "platform_esp32.h"
 #include "messaging.h"

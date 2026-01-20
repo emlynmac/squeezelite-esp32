@@ -26,6 +26,11 @@
 
 #include <signal.h>
 
+// Define global function pointers declared in embedded.h
+bool (*slimp_handler)(u8_t *data, int len) = NULL;
+void (*slimp_loop)(void) = NULL;
+void (*server_notify)(in_addr_t ip, u16_t hport, u16_t cport) = NULL;
+
 #define TITLE "Squeezelite " VERSION ", Copyright 2012-2015 Adrian Smith, 2015-2019 Ralph Irving."
 
 #define CODECS_BASE "flac,pcm,mp3,ogg"

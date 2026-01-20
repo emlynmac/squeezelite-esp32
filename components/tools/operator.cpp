@@ -9,6 +9,10 @@ void operator delete(void* ptr) noexcept {
 	if (ptr) free(ptr); 
 }
 
+void operator delete(void* ptr, std::size_t size) noexcept {
+	if (ptr) free(ptr);
+}
+
 /*
 // C++17 only
 void* operator new (std::size_t count, std::align_val_t alignment) { 

@@ -8,10 +8,9 @@
 */
 #include "cmd_i2ctools.h"
 #include <stdio.h>
-#include "accessors.h"
 #include "adac.h"
+#include "accessors.h"
 #include "argtable3/argtable3.h"
-#include "config.h"
 #include "display.h"
 #include "driver/i2c.h"
 #include "esp_log.h"
@@ -658,7 +657,7 @@ static int do_i2cdump_cmd (int argc, char** argv) {
             } else if ((block[k] & 0xff) < 32 || (block[k] & 0xff) >= 127) {
                 fprintf (f, "?");
             } else {
-                fprintf (f, "%c", block[k] & 0xff);
+                fprintf (f, "%c", (int)(block[k] & 0xff));
             }
         }
         fprintf (f, "\r\n");

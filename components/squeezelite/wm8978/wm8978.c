@@ -23,7 +23,7 @@ static void speaker(bool active) { }
 static void headset(bool active) { }
 static bool volume(unsigned left, unsigned right) { return false; }
 static void power(adac_power_e mode);
-static bool init(char *config, int i2c_port_num, i2s_config_t *i2s_config, bool *mck);
+static bool init(char *config, int i2c_port_num, i2s_config_param_t *i2s_config, bool *mck);
 
 static esp_err_t i2c_write_shadow(uint8_t reg, uint16_t val);
 static uint16_t i2c_read_shadow(uint8_t reg);
@@ -47,7 +47,7 @@ static uint16_t WM8978_REGVAL_TBL[58] =	{
 /****************************************************************************************
  * init
  */
-static bool init(char *config, int i2c_port, i2s_config_t *i2s_config, bool *mck) {	 
+static bool init(char *config, int i2c_port, i2s_config_param_t *i2s_config, bool *mck) {	 
 	WM8978 = adac_init(config, i2c_port);
 	
 	if (!WM8978) WM8978 = 0x1a;

@@ -13,6 +13,7 @@
 #include "pthread.h"
 #include "esp_pthread.h"
 #include "esp_system.h"
+#include "esp_mac.h"
 #include "esp_timer.h"
 #include "esp_wifi.h"
 #include "esp_log.h"

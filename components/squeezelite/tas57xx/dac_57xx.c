@@ -23,7 +23,7 @@
 
 static const char TAG[] = "TAS575x/8x";
 
-static bool init(char *config, int i2c_port_num, i2s_config_t *i2s_config, bool *mck);
+static bool init(char *config, int i2c_port_num, i2s_config_param_t *i2s_config, bool *mck);
 static void speaker(bool active);
 static void headset(bool active);
 static bool volume(unsigned left, unsigned right);
@@ -71,7 +71,7 @@ static int tas57_detect(void);
 /****************************************************************************************
  * init
  */
-static bool init(char *config, int i2c_port, i2s_config_t *i2s_config, bool *mck) {	 
+static bool init(char *config, int i2c_port, i2s_config_param_t *i2s_config, bool *mck) {	 
 	// find which TAS we are using (if any)
 	tas57_addr = adac_init(config, i2c_port);
 	if (!tas57_addr) tas57_addr = tas57_detect();

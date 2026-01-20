@@ -14,6 +14,8 @@
 #include <iphlpapi.h>
 #else
 #include "esp_netif.h"
+#include "network_services.h"
+#include "network_wifi.h"
 // IDF-V4++ #include "esp_netif.h"
 #include <ctype.h>
 #endif

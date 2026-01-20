@@ -166,7 +166,7 @@ static void 	rtp_thread_func(void *arg);
 #endif	
 
 /*---------------------------------------------------------------------------*/
-static struct alac_codec_s* alac_init(int fmtp[32]) {
+static struct alac_codec_s* alac_init(int fmtp[12]) {
 	struct alac_codec_s *alac;
 	unsigned sample_rate, block_size;
 	unsigned char sample_size, channels;

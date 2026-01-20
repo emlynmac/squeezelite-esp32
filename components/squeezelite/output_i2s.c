@@ -374,6 +374,13 @@ static esp_err_t i2s_set_sample_rates_compat(uint32_t rate) {
 	return i2s_channel_reconfig_std_clock(i2s_tx_handle, &clk_cfg);
 }
 
+static esp_err_t i2s_start_compat(void) {
+	if (i2s_tx_handle == NULL) {
+		return ESP_ERR_INVALID_STATE;
+	}
+	return i2s_channel_enable(i2s_tx_handle);
+}
+
 static esp_err_t i2s_stop_compat(void) {
 	if (i2s_tx_handle == NULL) {
 		return ESP_OK;
@@ -401,6 +408,7 @@ static esp_err_t i2s_write_expand_compat(const void *src, size_t size, size_t sr
 #define i2s_write_expand(port, src, size, src_bits, aim_bits, bytes_written, timeout) i2s_write_expand_compat(src, size, src_bits, aim_bits, bytes_written, timeout)
 #define i2s_zero_dma_buffer(port) i2s_zero_dma_buffer_compat()
 #define i2s_set_sample_rates(port, rate) i2s_set_sample_rates_compat(rate)
+#define i2s_start(port) i2s_start_compat()
 #define i2s_stop(port) i2s_stop_compat()
 #define i2s_set_pin(port, pin) ESP_OK  // Pin config handled in install
 
@@ -584,25 +592,21 @@ void output_init_i2s(log_level level, char *device, unsigned output_buf_size, ch
 
         bool mck_required = false;
 		for (int i = 0; adac == &dac_external && dac_set[i]; i++) if (strcasestr(dac_set[i]->model, model)) adac = dac_set[i];
-		res = adac->init(dac_config, I2C_PORT, &i2s_config, &mck_required) ? ESP_OK : ESP_FAIL;
-        
-#if ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(4, 4, 0)        
-        int mck_io_num = strcasestr(dac_config, "mck") || mck_required ? 0 : -1;
-        PARSE_PARAM(dac_config, "mck", '=', mck_io_num);
+		res = adac->init(dac_config, I2C_PORT, (i2s_config_param_t *)&i2s_config, &mck_required) ? ESP_OK : ESP_FAIL;
+#if ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(5, 0, 0)
+        LOG_INFO("configuring MCLK on GPIO %d", i2s_dac_pin.mck_io_num);
 
-        LOG_INFO("configuring MCLK on GPIO %d", mck_io_num);
-
-        if (mck_io_num == GPIO_NUM_0) {
+        if (i2s_dac_pin.mck_io_num == GPIO_NUM_0) {
             PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO0_U, FUNC_GPIO0_CLK_OUT1);
             WRITE_PERI_REG(PIN_CTRL, CONFIG_I2S_NUM == I2S_NUM_0 ? 0xFFF0 : 0xFFFF);
-        } else if (mck_io_num == GPIO_NUM_1) {
+        } else if (i2s_dac_pin.mck_io_num == GPIO_NUM_1) {
             PIN_FUNC_SELECT(PERIPHS_IO_MUX_U0TXD_U, FUNC_U0TXD_CLK_OUT3);
             WRITE_PERI_REG(PIN_CTRL, CONFIG_I2S_NUM == I2S_NUM_0 ? 0xF0F0 : 0xF0FF);
-        } else if (mck_io_num == GPIO_NUM_2) {
+        } else if (i2s_dac_pin.mck_io_num == GPIO_NUM_2) {
             PIN_FUNC_SELECT(PERIPHS_IO_MUX_U0RXD_U, FUNC_U0RXD_CLK_OUT2);
             WRITE_PERI_REG(PIN_CTRL, CONFIG_I2S_NUM == I2S_NUM_0 ? 0xFF00 : 0xFF0F);
         } else {
-            LOG_WARN("invalid MCK gpio %d", mck_io_num);
+            LOG_WARN("invalid MCK gpio %d", i2s_dac_pin.mck_io_num);
         }
 #else
         if (mck_required && i2s_dac_pin.mck_io_num == -1) i2s_dac_pin.mck_io_num = 0;
@@ -613,15 +617,12 @@ void output_init_i2s(log_level level, char *device, unsigned output_buf_size, ch
 		res |= i2s_set_pin(CONFIG_I2S_NUM, &i2s_dac_pin);
         	
 		if (res == ESP_OK && mute_control.gpio >= 0) {
-			gpio_pad_select_gpio(mute_control.gpio);
-			gpio_set_direction(mute_control.gpio, GPIO_MODE_OUTPUT);
-			gpio_set_level(mute_control.gpio, mute_control.active);
-		}		
-				
+			esp_rom_gpio_pad_select_gpio(mute_control.gpio);
+		}
 		LOG_INFO("%s DAC using I2S bck:%d, ws:%d, do:%d, mute:%d:%d (res:%d)", model, i2s_dac_pin.bck_io_num, i2s_dac_pin.ws_io_num, 
-																   i2s_dac_pin.data_out_num, mute_control.gpio, mute_control.active, res);
-	}	
-			
+															   i2s_dac_pin.data_out_num, mute_control.gpio, mute_control.active, res);
+	}
+
 	free(dac_config);
 	free(spdif_config);
 	
@@ -632,7 +633,7 @@ void output_init_i2s(log_level level, char *device, unsigned output_buf_size, ch
 	
 	// turn off GPIO than is not used (SPDIF of DAC DO when shared)
 	if (silent_do >= 0) {
-		gpio_pad_select_gpio(silent_do);
+		esp_rom_gpio_pad_select_gpio(silent_do);
 		gpio_set_direction(silent_do, GPIO_MODE_OUTPUT);
 		gpio_set_level(silent_do, 0);
 	}	

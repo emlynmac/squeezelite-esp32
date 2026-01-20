@@ -11,6 +11,7 @@
  
 #pragma once
 
+#include <pthread.h>
 #include "esp_pthread.h"
 #ifndef CONFIG_SQUEEZELITE_ESP32_RELEASE_URL
 #define CONFIG_SQUEEZELITE_ESP32_RELEASE_URL "https://github.com/sle118/squeezelite-esp32/releases"

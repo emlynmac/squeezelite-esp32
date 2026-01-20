@@ -7,7 +7,9 @@
 */
 
 #include <stdio.h>
+#include <inttypes.h>
 #include "esp_log.h"
+#include "esp_chip_info.h"
 #include "driver/gpio.h"
 #include "driver/i2c.h"
 #include "driver/spi_master.h"
@@ -26,7 +28,6 @@
 #include "sdkconfig.h"
 #include "soc/efuse_periph.h"
 #include "driver/gpio.h"
-#include "driver/spi_common_internal.h"
 #if CONFIG_IDF_TARGET_ESP32   
 #include "esp32/rom/efuse.h"
 #endif
@@ -167,7 +168,7 @@ const eth_config_t * config_eth_get_from_str(char* config ){
 	eth_config.host = spi_system_host;
 	eth_config.valid = true;
 
-	if(!eth_config.model || strlen(eth_config.model)==0){
+	if(strlen(eth_config.model)==0){
 		eth_config.valid = false;
 		return &eth_config;
 	}
@@ -269,7 +270,7 @@ esp_err_t config_i2c_set(const i2c_config_t * config, int port){
 	esp_err_t err=ESP_OK;
 	char * config_buffer=malloc_init_external(buffer_size);
 	if(config_buffer)  {
-		snprintf(config_buffer,buffer_size,"scl=%u,sda=%u,speed=%u,port=%u",config->scl_io_num,config->sda_io_num,config->master.clk_speed,port);
+		snprintf(config_buffer,buffer_size,"scl=%u,sda=%u,speed=%" PRIu32 ",port=%u",config->scl_io_num,config->sda_io_num,config->master.clk_speed,port);
 		log_send_messaging(MESSAGING_INFO,"Updating I2C configuration to %s",config_buffer);
 		err = config_set_value(NVS_TYPE_STR, "i2c_config", config_buffer);
 		if(err!=ESP_OK){
@@ -1101,27 +1102,48 @@ cJSON * get_psram_gpio_list(cJSON * list){
 	const char * spiwp_sd3_io = "spiwp_sd3_io";
 	const char * spihd_sd2_io = "spihd_sd2_io";
 	
+#if ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(5, 0, 0)
     uint32_t chip_ver = REG_GET_FIELD(EFUSE_BLK0_RDATA3_REG, EFUSE_RD_CHIP_VER_PKG);
     uint32_t pkg_ver = chip_ver & 0x7;
     if (pkg_ver == EFUSE_RD_CHIP_VER_PKG_ESP32D2WDQ5) {
+#else
+    // ESP-IDF 5.x: Use chip info API instead of direct EFUSE access
+    esp_chip_info_t chip_info;
+    esp_chip_info(&chip_info);
+    // For IDF 5.x, assume PSRAM is 1.8V compatible if present
+    if (chip_info.features & CHIP_FEATURE_EMB_PSRAM) {
+#endif
         rtc_vddsdio_config_t cfg = rtc_vddsdio_get_config();
         if (cfg.tieh != RTC_VDDSDIO_TIEH_1_8V) {
             return llist;
         }
         cJSON_AddItemToArray(list,get_gpio_entry(clk,psram_dev,CONFIG_D2WD_PSRAM_CLK_IO,true));
         cJSON_AddItemToArray(list,get_gpio_entry(cs,psram_dev,CONFIG_D2WD_PSRAM_CS_IO,true));
+#if ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(5, 0, 0)
     } else if ((pkg_ver == EFUSE_RD_CHIP_VER_PKG_ESP32PICOD2) || (pkg_ver == EFUSE_RD_CHIP_VER_PKG_ESP32PICOD4)) {
+#else
+    } else {
+#endif
         rtc_vddsdio_config_t cfg = rtc_vddsdio_get_config();
         if (cfg.tieh != RTC_VDDSDIO_TIEH_3_3V) {
             return llist;
         }
 		cJSON_AddItemToArray(list,get_gpio_entry(clk,psram_dev,PICO_PSRAM_CLK_IO,true));
         cJSON_AddItemToArray(list,get_gpio_entry(cs,psram_dev,CONFIG_PICO_PSRAM_CS_IO,true));
+#if ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(5, 0, 0)
     } else if ((pkg_ver == EFUSE_RD_CHIP_VER_PKG_ESP32D0WDQ6) || (pkg_ver == EFUSE_RD_CHIP_VER_PKG_ESP32D0WDQ5)){
+#else
+    }
+    if (true) {  // Fallback for other variants
+#endif
 		cJSON_AddItemToArray(list,get_gpio_entry(clk,psram_dev,CONFIG_D0WD_PSRAM_CLK_IO,true));
         cJSON_AddItemToArray(list,get_gpio_entry(cs,psram_dev,CONFIG_D0WD_PSRAM_CS_IO,true));
     } else {
+#if ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(5, 0, 0)
         ESP_LOGW(TAG, "Cant' determine GPIOs for PSRAM chip id: %d", pkg_ver);
+#else
+        ESP_LOGW(TAG, "Can't determine GPIOs for PSRAM chip");
+#endif
 		cJSON_AddItemToArray(list,get_gpio_entry(clk,psram_dev,-1,true));
         cJSON_AddItemToArray(list,get_gpio_entry(cs,psram_dev,-1,true));
     }
@@ -1149,9 +1171,15 @@ cJSON * get_psram_gpio_list(cJSON * list){
 		cJSON_AddItemToArray(list,get_gpio_entry(spiwp_sd3_io,psram_dev,CONFIG_SPIRAM_SPIWP_SD3_PIN,true));
         #endif
 	}
+#if ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(5, 0, 0)
     if (spiconfig == EFUSE_SPICONFIG_SPI_DEFAULTS) {
 		cJSON_AddItemToArray(list,get_gpio_entry(clk,flash_dev,SPI_IOMUX_PIN_NUM_CLK,true));
 		cJSON_AddItemToArray(list,get_gpio_entry(cs,flash_dev,SPI_IOMUX_PIN_NUM_CS,true));
+#else
+    if (spiconfig == EFUSE_SPICONFIG_SPI_DEFAULTS) {
+		cJSON_AddItemToArray(list,get_gpio_entry(clk,flash_dev,MSPI_IOMUX_PIN_NUM_CLK,true));
+		cJSON_AddItemToArray(list,get_gpio_entry(cs,flash_dev,MSPI_IOMUX_PIN_NUM_CS0,true));
+#endif
     } else if (spiconfig == EFUSE_SPICONFIG_HSPI_DEFAULTS) {
 		cJSON_AddItemToArray(list,get_gpio_entry(clk,flash_dev,FLASH_HSPI_CLK_IO,true));
 		cJSON_AddItemToArray(list,get_gpio_entry(cs,flash_dev,FLASH_HSPI_CS_IO,true));

@@ -11,6 +11,7 @@
 #include "platform_esp32.h"
 #include "platform_config.h"
 #include "esp_app_format.h"
+#include "esp_app_desc.h"
 #include "tools.h"
 #include "messaging.h"
 

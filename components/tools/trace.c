@@ -3,7 +3,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include "esp_log.h"
-#include "freertos/xtensa_api.h"
+#include "xtensa_api.h"
 #include "freertos/FreeRTOSConfig.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"

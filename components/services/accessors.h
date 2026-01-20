@@ -25,8 +25,7 @@ typedef struct {
 } i2s_pin_config_t;
 
 // Only define i2c_config_t stub if legacy driver/i2c.h isn't included
-// I2C_MODE_MASTER is defined in the legacy driver/i2c.h
-#ifndef I2C_MODE_MASTER
+#ifndef _DRIVER_I2C_H_
 typedef struct {
     int mode;
     int sda_io_num;

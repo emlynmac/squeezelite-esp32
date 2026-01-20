@@ -68,11 +68,11 @@ void set_chip_power_gpio(int gpio, char *value) {
 	if (gpio >= GPIO_NUM_MAX) return;
 
 	if (!strcasecmp(value, "vcc") ) {
-		gpio_pad_select_gpio(gpio);
+		esp_rom_gpio_pad_select_gpio(gpio);
 		gpio_set_direction(gpio, GPIO_MODE_OUTPUT);
 		gpio_set_level(gpio, 1);
 	} else if (!strcasecmp(value, "gnd")) {
-		gpio_pad_select_gpio(gpio);
+		esp_rom_gpio_pad_select_gpio(gpio);
 		gpio_set_direction(gpio, GPIO_MODE_OUTPUT);
 		gpio_set_level(gpio, 0);
 	} else parsed = false;
@@ -276,6 +276,14 @@ void services_sleep_init(void) {
 /****************************************************************************************
  *
  */
+// Timer callback wrapper for esp_deep_sleep_start
+static void sleep_timer_callback(TimerHandle_t xTimer) {
+    esp_deep_sleep_start();
+}
+
+/****************************************************************************************
+ *
+ */
 void services_sleep_activate(sleep_cause_e cause) {
     // call all sleep hooks that might want to do something
     for (void (**suspend)(void) = sleep_context.suspend; *suspend; suspend++) (*suspend)();
@@ -318,7 +326,7 @@ void services_sleep_activate(sleep_cause_e cause) {
     }
 
     // we need to use a timer in case the same button is used for sleep and wake-up and it's "pressed" vs "released" selected
-    if (cause == SLEEP_ONKEY) xTimerStart(xTimerCreate("sleepTimer", pdMS_TO_TICKS(1000), pdFALSE, NULL, (void (*)(void*)) esp_deep_sleep_start), 0);
+    if (cause == SLEEP_ONKEY) xTimerStart(xTimerCreate("sleepTimer", pdMS_TO_TICKS(1000), pdFALSE, NULL, sleep_timer_callback), 0);
     else esp_deep_sleep_start();
 }
 

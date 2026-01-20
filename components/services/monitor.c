@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <inttypes.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/timers.h"
 #include "esp_system.h"
@@ -71,7 +72,7 @@ static void task_stats( cJSON* top ) {
 	for(int i = 0, n = 0; i < current.n; i++ ) {
 		for (int j = 0; j < previous.n; j++) {
 			if (current.tasks[i].xTaskNumber == previous.tasks[j].xTaskNumber) {
-				n += snprintf(scratch + n, SCRATCH_SIZE - n, "%16s (%u) %2u%% s:%5u", current.tasks[i].pcTaskName,
+				n += snprintf(scratch + n, SCRATCH_SIZE - n, "%16s (%u) %2" PRIu32 "%% s:%5" PRIu32, current.tasks[i].pcTaskName,
 																		   current.tasks[i].eCurrentState,
 																		   100 * (current.tasks[i].ulRunTimeCounter - previous.tasks[j].ulRunTimeCounter) / elapsed,
 																		   current.tasks[i].usStackHighWaterMark);

@@ -9,6 +9,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <stdint.h>
+#include <inttypes.h>
 #include <arpa/inet.h>
 #include "esp_log.h"
 #include "globdefs.h"
@@ -24,6 +25,9 @@
 #include "gds_image.h"
 
 static const char *TAG = "display";
+
+// Define global function pointer declared in display.h
+bool (*display_bus)(void *from, enum display_bus_cmd_e cmd) = NULL;
 
 #define min(a,b) (((a) < (b)) ? (a) : (b))
 #define max(a,b) (((a) > (b)) ? (a) : (b))
@@ -252,8 +256,8 @@ static void displayer_task(void *args) {
 				// when we have duration but no space, display remaining time
 				if (displayer.duration.value && !displayer.duration.visible) elapsed = displayer.duration.value - elapsed;
 
-				if (elapsed < 3600) sprintf(_line, "%u:%02u", elapsed / 60, elapsed % 60);
-				else sprintf(_line, "%u:%02u:%02u", (elapsed / 3600) % 100, (elapsed % 3600) / 60, elapsed % 60);
+				if (elapsed < 3600) sprintf(_line, "%" PRIu32 ":%02" PRIu32, elapsed / 60, elapsed % 60);
+				else sprintf(_line, "%" PRIu32 ":%02" PRIu32 ":%02" PRIu32, (elapsed / 3600) % 100, (elapsed % 3600) / 60, elapsed % 60);
 
 				// concatenate if we have room for elapsed / duration
 				if (displayer.duration.visible) {
@@ -417,9 +421,9 @@ void displayer_timer(enum displayer_time_e mode, int elapsed, int duration) {
 		displayer.duration.visible = true;
 		displayer.duration.value = duration / 1000;
 
-		if (displayer.duration.value > 3600) sprintf(displayer.duration.string, "%u:%02u:%02u", (displayer.duration.value / 3600) % 10,
+		if (displayer.duration.value > 3600) sprintf(displayer.duration.string, "%" PRIu32 ":%02" PRIu32 ":%02" PRIu32, (displayer.duration.value / 3600) % 10,
 													(displayer.duration.value % 3600) / 60, displayer.duration.value % 60);
-		else sprintf(displayer.duration.string, "%u:%02u", displayer.duration.value / 60, displayer.duration.value % 60);
+		else sprintf(displayer.duration.string, "%" PRIu32 ":%02" PRIu32, displayer.duration.value / 60, displayer.duration.value % 60);
 
 		char *buf;
 		asprintf(&buf, "%s %s/%s", displayer.header, displayer.duration.string, displayer.duration.string);

@@ -39,7 +39,7 @@
 
 static const char TAG[] = "TAS5713";
 
-static bool init(char *config, int i2c_port_num, i2s_config_t *i2s_config, bool *mck);
+static bool init(char *config, int i2c_port_num, i2s_config_param_t *i2s_config, bool *mck);
 static void speaker(bool active) { };
 static void headset(bool active) { } ;
 static bool volume(unsigned left, unsigned right);
@@ -65,7 +65,7 @@ typedef enum {
 /****************************************************************************************
  * init
  */
-static bool init(char *config, int i2c_port, i2s_config_t *i2s_config, bool *mck) {	 
+static bool init(char *config, int i2c_port, i2s_config_param_t *i2s_config, bool *mck) {	 
 	/* find if there is a tas5713 attached. Reg 0 should read non-zero but not 255 if so */
 	adac_init(config, i2c_port);
     if (adac_read_byte(TAS5713, 0x00) == 255) {

@@ -21,6 +21,6 @@ if(IDF_TARGET STREQUAL esp32 AND IDF_VERSION_MAJOR EQUAL 4 AND IDF_VERSION_MINOR
     )
 else()
     message(STATUS "==> NO I2S OVERRIDE (ESP-IDF 5.x uses stock driver with mclk_multiple) <==")
-    # Create empty component for ESP-IDF 5.x
-    idf_component_register()
+    # Create component with ESP-IDF 5.5.1 stubs for missing symbols
+    idf_component_register(SRCS "esp_idf_stubs.c")
 endif()

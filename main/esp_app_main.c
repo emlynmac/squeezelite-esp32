@@ -13,11 +13,13 @@
 #include "led.h"
 #include <stdio.h>
 #include <string.h>
+#include <pthread.h>
 #include "freertos/FreeRTOS.h"
 #include "driver/gpio.h"
 #include "driver/spi_master.h"
 #include "freertos/task.h"
 #include "esp_system.h"
+#include "esp_mac.h"
 #include "esp_partition.h"
 #include "esp_wifi.h"
 #include <esp_event.h>

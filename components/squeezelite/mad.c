@@ -268,8 +268,8 @@ static decode_state mad_decode(void) {
 		}
 		
 		frames = m->synth.pcm.length;
-		iptrl = m->synth.pcm.samples[0];
-		iptrr = m->synth.pcm.samples[ m->synth.pcm.channels - 1 ];
+		iptrl = (s32_t *)m->synth.pcm.samples[0];
+		iptrr = (s32_t *)m->synth.pcm.samples[ m->synth.pcm.channels - 1 ];
 
 		if (m->skip) {
 			u32_t skip = min(m->skip, frames);
