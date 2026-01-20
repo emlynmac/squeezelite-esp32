@@ -77,7 +77,11 @@ esp_image_header_t bootloader_image_hdr = {
 };
 
 // PHY parameter tracking stub (referenced by phy_common.c)
-uint32_t phy_param_track_tot = 0;
+// This is a function to track PHY parameters for WiFi and BLE
+void phy_param_track_tot(bool en_wifi, bool en_ble_154)
+{
+    // No-op - PHY parameter tracking not needed
+}
 
 // RTC clock init stubs (referenced by librtc.a)
 void rtc_init_clk(void) {
@@ -97,3 +101,119 @@ int esp_netif_ppp_set_auth_internal(void* netif, int authtype, const char* user,
 int mbedtls_ssl_tls13_handshake_client_step(void* ssl) {
     return -1; // MBEDTLS_ERR_SSL_FEATURE_UNAVAILABLE
 }
+
+// ============================================================================
+// IRAM-placed libc function implementations to fix relocation errors
+// These need to be in IRAM to avoid "call target out of range" linker errors
+// when SPIRAM is enabled without the cache workaround.
+// ============================================================================
+
+#include <string.h>
+#include <stdlib.h>
+#include <reent.h>
+#include <sys/lock.h>
+#include "esp_attr.h"
+
+// Simple IRAM itoa/utoa implementations (weak to avoid conflicts with libc)
+__attribute__((weak)) IRAM_ATTR char* __itoa(int value, char* str, int base) {
+    char* ptr = str;
+    char* ptr1 = str;
+    char tmp_char;
+    int tmp_value;
+    
+    if (base < 2 || base > 36) {
+        *str = '\0';
+        return str;
+    }
+    
+    do {
+        tmp_value = value;
+        value /= base;
+        *ptr++ = "zyxwvutsrqponmlkjihgfedcba9876543210123456789abcdefghijklmnopqrstuvwxyz"[35 + (tmp_value - value * base)];
+    } while (value);
+    
+    if (tmp_value < 0) *ptr++ = '-';
+    *ptr-- = '\0';
+    
+    while (ptr1 < ptr) {
+        tmp_char = *ptr;
+        *ptr-- = *ptr1;
+        *ptr1++ = tmp_char;
+    }
+    return str;
+}
+
+__attribute__((weak)) IRAM_ATTR char* __utoa(unsigned value, char* str, int base) {
+    char* ptr = str;
+    char* ptr1 = str;
+    char tmp_char;
+    unsigned tmp_value;
+    
+    if (base < 2 || base > 36) {
+        *str = '\0';
+        return str;
+    }
+    
+    do {
+        tmp_value = value;
+        value /= base;
+        *ptr++ = "0123456789abcdefghijklmnopqrstuvwxyz"[tmp_value - value * base];
+    } while (value);
+    
+    *ptr-- = '\0';
+    
+    while (ptr1 < ptr) {
+        tmp_char = *ptr;
+        *ptr-- = *ptr1;
+        *ptr1++ = tmp_char;
+    }
+    return str;
+}
+
+// IRAM strtok_r implementation (weak to avoid conflicts with libc)
+__attribute__((weak)) IRAM_ATTR char* __strtok_r(char* s, const char* delim, char** lasts) {
+    char* spanp;
+    int c, sc;
+    char* tok;
+    
+    if (s == NULL && (s = *lasts) == NULL)
+        return NULL;
+    
+cont:
+    c = *s++;
+    for (spanp = (char*)delim; (sc = *spanp++) != 0;) {
+        if (c == sc)
+            goto cont;
+    }
+    
+    if (c == 0) {
+        *lasts = NULL;
+        return NULL;
+    }
+    tok = s - 1;
+    
+    for (;;) {
+        c = *s++;
+        spanp = (char*)delim;
+        do {
+            if ((sc = *spanp++) == c) {
+                if (c == 0)
+                    s = NULL;
+                else
+                    s[-1] = 0;
+                *lasts = s;
+                return tok;
+            }
+        } while (sc != 0);
+    }
+}
+
+// IRAM lock functions for stdio (weak to avoid conflicts with libc)
+__attribute__((weak)) IRAM_ATTR void __sfp_lock_acquire(void) {
+    // Simplified - in full implementation would acquire lock
+}
+
+__attribute__((weak)) IRAM_ATTR void __sfp_lock_release(void) {
+    // Simplified - in full implementation would release lock
+}
+

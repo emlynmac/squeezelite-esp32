@@ -4,6 +4,11 @@ include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 set(PROJECT_VER $ENV{PROJECT_VER})
 add_definitions(-DMODEL_NAME=SqueezeESP32)
 
+# Add Xtensa-specific compiler flags for better code placement (ESP32 rev3)
+# -mtext-section-literals helps keep code and literals closer together
+add_compile_options(-mtext-section-literals)
+add_link_options(-mtext-section-literals)
+
 if(NOT DEFINED DEPTH)
 	set(DEPTH "16")
 endif()	
