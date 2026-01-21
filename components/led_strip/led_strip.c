@@ -17,9 +17,21 @@
     ------------------------------------------------------------------------- */
 
 #include "led_strip.h"
+#include "driver/rmt_tx.h"
 #include "freertos/task.h"
 
 #include <string.h>
+
+// Compatibility typedef for legacy rmt_item32_t
+typedef struct {
+    uint16_t duration0:15;
+    uint16_t level0:1;
+    uint16_t duration1:15;
+    uint16_t level1:1;
+} rmt_item32_t;
+
+// Global RMT TX channel handle
+static rmt_channel_handle_t led_strip_rmt_tx_channel = NULL;
 
 #define LED_STRIP_TASK_SIZE             (1024)
 #define LED_STRIP_TASK_PRIORITY         (configMAX_PRIORITIES - 1)
@@ -235,7 +247,7 @@ static void led_strip_task(void *arg)
     };
 
     for(;;) {
-        rmt_wait_tx_done(led_strip->rmt_channel, portMAX_DELAY);
+        // Wait for previous transmission to complete
         vTaskDelay(LED_STRIP_REFRESH_PERIOD_MS / portTICK_PERIOD_MS);
 
         xSemaphoreTake(led_strip->access_semaphore, portMAX_DELAY);
@@ -243,10 +255,13 @@ static void led_strip_task(void *arg)
         led_make_waveform(led_strip->led_strip_working,
                           rmt_items,
                           led_strip->led_strip_length);
-        rmt_write_items(led_strip->rmt_channel,
-                        rmt_items,
-                        num_items_malloc,
-                        false);
+        
+        rmt_transmit_config_t tx_conf = {
+            .loop_count = 0,
+        };
+        
+        rmt_symbol_word_t *symbols = (rmt_symbol_word_t *)rmt_items;
+        rmt_transmit(led_strip_rmt_tx_channel, NULL, symbols, num_items_malloc * sizeof(rmt_item32_t), &tx_conf);
     }
 
     if (rmt_items) {
@@ -257,29 +272,20 @@ static void led_strip_task(void *arg)
 
 static bool led_strip_init_rmt(struct led_strip_t *led_strip)
 {
-    rmt_config_t rmt_cfg = {
-        .rmt_mode = RMT_MODE_TX,
-        .channel = led_strip->rmt_channel,
-        .clk_div = LED_STRIP_RMT_CLK_DIV,
+    rmt_tx_channel_config_t tx_config = {
         .gpio_num = led_strip->gpio,
-        .mem_block_num = 1,
-        .tx_config = {
-            .loop_en = false,
-            .carrier_freq_hz = 100, // Not used, but has to be set to avoid divide by 0 err
-            .carrier_duty_percent = 50,
-            .carrier_level = RMT_CARRIER_LEVEL_LOW,
-            .carrier_en = false,
-            .idle_level = RMT_IDLE_LEVEL_LOW,
-            .idle_output_en = true,
-        }
+        .clk_src = RMT_CLK_SRC_DEFAULT,
+        .resolution_hz = 10000000, // 10MHz (80MHz / LED_STRIP_RMT_CLK_DIV)
+        .mem_block_symbols = 64,
+        .trans_queue_depth = 4,
     };
 
-    esp_err_t cfg_ok = rmt_config(&rmt_cfg);
-    if (cfg_ok != ESP_OK) {
+    esp_err_t err = rmt_new_tx_channel(&tx_config, &led_strip_rmt_tx_channel);
+    if (err != ESP_OK) {
         return false;
     }
-    esp_err_t install_ok = rmt_driver_install(rmt_cfg.channel, 0, 0);
-    if (install_ok != ESP_OK) {
+    err = rmt_enable(led_strip_rmt_tx_channel);
+    if (err != ESP_OK) {
         return false;
     }
 

@@ -125,20 +125,18 @@ void led_vu_init()
     led_strip_config.led_strip_working = heap_caps_malloc(strip.length * sizeof(struct led_color_t), MALLOC_CAP_8BIT);
     led_strip_config.led_strip_showing = heap_caps_malloc(strip.length * sizeof(struct led_color_t), MALLOC_CAP_8BIT);
     led_strip_config.gpio = strip.gpio;
-    led_strip_config.rmt_channel = RMT_NEXT_TX_CHANNEL();
 
     // initialize driver 
     bool led_init_ok = led_strip_init(&led_strip_config);
     if (led_init_ok) {
         led_display = &led_strip_config;
-        ESP_LOGI(TAG, "led_vu using gpio:%d length:%d on channel:%d", strip.gpio, strip.length, led_strip_config.rmt_channel);
+        ESP_LOGI(TAG, "led_vu using gpio:%d length:%d", strip.gpio, strip.length);
     } else {
         ESP_LOGE(TAG, "led_vu init failed");
         goto done;
     }
 
-    // reserver max memory for remote management systems
-    rmt_set_mem_block_num(led_strip_config.rmt_channel, 7);
+    // Memory block configuration is now set in RMT TX channel config (mem_block_symbols)
 
     services_sleep_setsuspend(led_vu_sleep);
 

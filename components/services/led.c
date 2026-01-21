@@ -39,7 +39,6 @@ static const char *TAG = "led";
 
 #define RMT_CLK (40/2)
 
-static int8_t led_rmt_channel = -1;
 static rmt_channel_handle_t led_rmt_tx_channel = NULL;
 static uint32_t scale24(uint32_t bright, uint8_t);
 
@@ -258,8 +257,6 @@ bool led_config(int idx, gpio_num_t gpio, int color, int bright, led_type_t type
         for (const struct rmt_led_param_s *p = rmt_led_param; !leds[idx].rmt && p->type >= 0; p++) if (p->type == type) leds[idx].rmt = p;
         if (!leds[idx].rmt) return false;
 
-        if (led_rmt_channel < 0) led_rmt_channel = RMT_NEXT_TX_CHANNEL();
-        leds[idx].channel = led_rmt_channel;
 		leds[idx].bright = bright > 0 ? bright : 100;
 
         // Configure RMT TX channel with new API

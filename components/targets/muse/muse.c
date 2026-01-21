@@ -7,7 +7,7 @@
 #include <esp_system.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
-#include "driver/rmt.h"
+#include "driver/rmt_tx.h"
 #include "globdefs.h"
 #include "monitor.h"
 #include "targets.h"
@@ -39,7 +39,14 @@ struct led_state {
     uint32_t leds[NUM_LEDS];
 };
 
-static int rmt_channel;
+typedef struct {
+    uint16_t duration0:15;
+    uint16_t level0:1;
+    uint16_t duration1:15;
+    uint16_t level1:1;
+} rmt_item32_t;
+
+static rmt_channel_handle_t muse_rmt_tx_channel = NULL;
 
 void ws2812_control_init(void);
 void ws2812_write_leds(struct led_state new_state);
@@ -95,27 +102,29 @@ void setup_rmt_data_buffer(struct led_state new_state);
 
 void ws2812_control_init(void)
 {
-  rmt_channel = RMT_NEXT_TX_CHANNEL();  
-  rmt_config_t config;
-  config.rmt_mode = RMT_MODE_TX;
-  config.channel = rmt_channel;
-  config.gpio_num = LED_RMT_TX_GPIO;
-  config.mem_block_num = 3;
-  config.tx_config.loop_en = false;
-  config.tx_config.carrier_en = false;
-  config.tx_config.idle_output_en = true;
-  config.tx_config.idle_level = 0;
-  config.clk_div = 2;
-
-  ESP_ERROR_CHECK(rmt_config(&config));
-  ESP_ERROR_CHECK(rmt_driver_install(config.channel, 0, 0));
+  rmt_tx_channel_config_t tx_config = {
+    .gpio_num = LED_RMT_TX_GPIO,
+    .clk_src = RMT_CLK_SRC_DEFAULT,
+    .resolution_hz = 40000000, // 40MHz (2 * clk_div from legacy driver)
+    .mem_block_symbols = 192, // mem_block_num * 64 symbols
+    .trans_queue_depth = 4,
+  };
   
-  ESP_LOGI(TAG, "LED wth ws2812 using gpio %d and channel %d", LED_RMT_TX_GPIO, rmt_channel);
+  ESP_ERROR_CHECK(rmt_new_tx_channel(&tx_config, &muse_rmt_tx_channel));
+  ESP_ERROR_CHECK(rmt_enable(muse_rmt_tx_channel));
+
+  ESP_LOGI(TAG, "LED wth ws2812 using gpio %d", LED_RMT_TX_GPIO);
 }
 
 void ws2812_write_leds(struct led_state new_state) {
   setup_rmt_data_buffer(new_state);
-  rmt_write_items(rmt_channel, led_data_buffer, LED_BUFFER_ITEMS, false);
+  
+  rmt_transmit_config_t tx_conf = {
+    .loop_count = 0,
+  };
+  
+  rmt_symbol_word_t *symbols = (rmt_symbol_word_t *)led_data_buffer;
+  rmt_transmit(muse_rmt_tx_channel, NULL, symbols, LED_BUFFER_ITEMS * sizeof(rmt_item32_t), &tx_conf);
 }
 
 void setup_rmt_data_buffer(struct led_state new_state) 

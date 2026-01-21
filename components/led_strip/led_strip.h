@@ -15,9 +15,9 @@
 extern "C" {
 #endif
 
-#include <driver/rmt.h>
-#include <driver/gpio.h>
+#include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
+#include <driver/gpio.h>
 #include <stddef.h>
 
 enum rgb_led_type_t {
@@ -41,9 +41,6 @@ struct led_strip_t {
     enum rgb_led_type_t rgb_led_type; // should be const, but workaround needed for initialization
     uint32_t led_strip_length;
 
-    // RMT peripheral settings
-    rmt_channel_t rmt_channel;
-    
     gpio_num_t gpio; // Must be less than GPIO_NUM_33
 
     struct led_color_t *led_strip_working;
