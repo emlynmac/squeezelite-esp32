@@ -13,7 +13,7 @@
 #include "freertos/task.h"
 #include "esp_err.h"
 #include "esp_log.h"
-#include "driver/rmt.h"
+#include "driver/rmt_rx.h"
 #include "globdefs.h"
 #include "infrared.h"
 
@@ -23,6 +23,21 @@ static const char* TAG = "IR";
 #define IR_TOOLS_FLAGS_INVERSE (1 << 1)   /*!< Inverse the IR signal, i.e. take high level as low, and vice versa */
 
 static int8_t ir_gpio = -1;
+static rmt_channel_handle_t ir_rmt_rx_channel = NULL;
+static uint32_t ir_resolution_hz = 1000000; // 1MHz resolution
+
+// Custom type to match legacy rmt_item32_t structure
+typedef struct {
+    union {
+        struct {
+            uint32_t duration0 : 15;
+            uint32_t level0 : 1;
+            uint32_t duration1 : 15;
+            uint32_t level1 : 1;
+        };
+        uint32_t val;
+    };
+} rmt_item32_t;
 
 /**
 * @brief IR device type
@@ -285,9 +300,7 @@ ir_parser_t *ir_parser_rmt_new_nec(const ir_parser_config_t *config) {
         nec_parser->inverse = true;
     }
 
-    uint32_t counter_clk_hz = 0;
-    RMT_CHECK(rmt_get_counter_clock((rmt_channel_t)config->dev_hdl, &counter_clk_hz) == ESP_OK,
-              "get rmt counter clock failed", err, NULL);
+    uint32_t counter_clk_hz = ir_resolution_hz;
     float ratio = (float)counter_clk_hz / 1e6;
     nec_parser->leading_code_high_ticks = (uint32_t)(ratio * NEC_LEADING_CODE_HIGH_US);
     nec_parser->leading_code_low_ticks = (uint32_t)(ratio * NEC_LEADING_CODE_LOW_US);
@@ -301,8 +314,6 @@ ir_parser_t *ir_parser_rmt_new_nec(const ir_parser_config_t *config) {
     nec_parser->parent.input = nec_parser_input;
     nec_parser->parent.get_scan_code = nec_parser_get_scan_code;
     return &nec_parser->parent;
-err:
-    return ret;
 }
 
 /****************************************************************************************
@@ -431,17 +442,13 @@ ir_parser_t *ir_parser_rmt_new_rc5(const ir_parser_config_t *config) {
 
     rc5_parser->flags = config->flags;
 
-    uint32_t counter_clk_hz = 0;
-    RMT_CHECK(rmt_get_counter_clock((rmt_channel_t)config->dev_hdl, &counter_clk_hz) == ESP_OK,
-              "get rmt counter clock failed", err, NULL);
+    uint32_t counter_clk_hz = ir_resolution_hz;
     float ratio = (float)counter_clk_hz / 1e6;
     rc5_parser->pulse_duration_ticks = (uint32_t)(ratio * RC5_PULSE_DURATION_US);
     rc5_parser->margin_ticks = (uint32_t)(ratio * config->margin_us);
     rc5_parser->parent.input = rc5_parser_input;
     rc5_parser->parent.get_scan_code = rc5_parser_get_scan_code;
     return &rc5_parser->parent;
-err:
-    return ret;
 }
 
 
@@ -450,16 +457,25 @@ err:
  */
 bool infrared_receive(RingbufHandle_t rb, infrared_handler handler) {
 	size_t rx_size = 0;
-	rmt_item32_t* item = (rmt_item32_t*) xRingbufferReceive(rb, &rx_size, 10 / portTICK_PERIOD_MS);
+	rmt_symbol_word_t* symbols = (rmt_symbol_word_t*) xRingbufferReceive(rb, &rx_size, 10 / portTICK_PERIOD_MS);
     bool decoded = false;
     
-	if (item) {
+	if (symbols) {
 		uint32_t addr, cmd;
         bool repeat = false;
 		      
-        rx_size /= 4; // one RMT = 4 Bytes
+        rx_size /= sizeof(rmt_symbol_word_t);
         
-        if (ir_parser->input(ir_parser, item, rx_size) == ESP_OK) {
+        // Convert new format to legacy format for parser compatibility
+        rmt_item32_t items[rx_size];
+        for (size_t i = 0; i < rx_size; i++) {
+            items[i].duration0 = symbols[i].duration0;
+            items[i].level0 = symbols[i].level0;
+            items[i].duration1 = symbols[i].duration1;
+            items[i].level1 = symbols[i].level1;
+        }
+        
+        if (ir_parser->input(ir_parser, items, rx_size) == ESP_OK) {
             if (ir_parser->get_scan_code(ir_parser, &addr, &cmd, &repeat) == ESP_OK) {
                 decoded = true;
                 handler(addr, cmd);
@@ -470,11 +486,11 @@ bool infrared_receive(RingbufHandle_t rb, infrared_handler handler) {
         // if we have not decoded data but lenght is reasonnable, dump it
         if (!decoded && rx_size > RC5_MAX_FRAME_RMT_WORDS) {
             ESP_LOGI(TAG, "can't decode IR signal of len %d", rx_size);
-            ESP_LOG_BUFFER_HEX(TAG, item, rx_size * 4);
+            ESP_LOG_BUFFER_HEX(TAG, items, rx_size * sizeof(rmt_item32_t));
         }
 
 		// after parsing the data, return spaces to ringbuffer.
-        vRingbufferReturnItem(rb, (void*) item);
+        vRingbufferReturnItem(rb, (void*) symbols);
     }
     
     return decoded;
@@ -491,19 +507,46 @@ int8_t infrared_gpio(void) {
  * 
  */
 void infrared_init(RingbufHandle_t *rb, int gpio, infrared_mode_t mode) {  
-    int rmt_channel = RMT_NEXT_RX_CHANNEL();
-    rmt_config_t rmt_rx_config = RMT_DEFAULT_CONFIG_RX(gpio, rmt_channel);
-    rmt_config(&rmt_rx_config);
-    rmt_driver_install(rmt_rx_config.channel, 1000, 0);
-    ir_parser_config_t ir_parser_config = IR_PARSER_DEFAULT_CONFIG((ir_dev_t) rmt_rx_config.channel);
+    // Configure RMT RX channel with new API
+    rmt_rx_channel_config_t rx_chan_config = {
+        .clk_src = RMT_CLK_SRC_DEFAULT,
+        .resolution_hz = ir_resolution_hz,
+        .mem_block_symbols = 64,
+        .gpio_num = gpio,
+    };
+    
+    ESP_ERROR_CHECK(rmt_new_rx_channel(&rx_chan_config, &ir_rmt_rx_channel));
+    
+    // Configure receive parameters
+    rmt_receive_config_t receive_config = {
+        .signal_range_min_ns = 1250,
+        .signal_range_max_ns = 12000000,
+    };
+    
+    ir_parser_config_t ir_parser_config = IR_PARSER_DEFAULT_CONFIG((ir_dev_t) 0);
     ir_parser_config.flags |= IR_TOOLS_FLAGS_PROTO_EXT; // Using extended IR protocols (both NEC and RC5 have extended version)
 
     ir_parser = (mode == IR_NEC) ? ir_parser_rmt_new_nec(&ir_parser_config) : ir_parser_rmt_new_rc5(&ir_parser_config);
     ir_gpio = gpio;
     
-    // get RMT RX ringbuffer
-    rmt_get_ringbuf_handle(rmt_channel, rb);
-    rmt_rx_start(rmt_channel, 1);
+    // Get receive queue
+    QueueHandle_t receive_queue;
+    rmt_rx_event_callbacks_t cbs = {
+        .on_recv_done = NULL,
+    };
+    rmt_rx_register_event_callbacks(ir_rmt_rx_channel, &cbs, &receive_queue);
     
-    ESP_LOGI(TAG, "Starting Infrared Receiver mode %s on gpio %d and channel %d", mode == IR_NEC ? "nec" : "rc5", gpio, rmt_channel);
+    // Enable and start receiving
+    ESP_ERROR_CHECK(rmt_enable(ir_rmt_rx_channel));
+    
+    // Allocate receive buffer and start continuous receive
+    rmt_symbol_word_t *receive_buffer = malloc(64 * sizeof(rmt_symbol_word_t));
+    if (receive_buffer) {
+        rmt_receive(ir_rmt_rx_channel, receive_buffer, 64 * sizeof(rmt_symbol_word_t), &receive_config);
+    }
+    
+    // Get ringbuffer handle for compatibility
+    *rb = receive_queue;
+    
+    ESP_LOGI(TAG, "Starting Infrared Receiver mode %s on gpio %d", mode == IR_NEC ? "nec" : "rc5", gpio);
 }
