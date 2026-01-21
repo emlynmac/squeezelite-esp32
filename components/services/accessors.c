@@ -1212,8 +1212,10 @@ cJSON * get_gpio_list(bool refresh) {
 		int channel = -1;
 		PARSE_PARAM(bat_config, "channel", '=', channel);
 		if(channel != -1){
-			if(adc_continuous_io_to_channel(channel, ADC_UNIT_1, &gpio_num) == ESP_OK){
-				cJSON_AddItemToArray(gpio_list,get_gpio_entry("bat","other",gpio_num,false));
+			adc_unit_t unit_id;
+			adc_channel_t adc_channel;
+			if(adc_oneshot_io_to_channel(channel, &unit_id, &adc_channel) == ESP_OK && unit_id == ADC_UNIT_1){
+				cJSON_AddItemToArray(gpio_list,get_gpio_entry("bat","other",channel,false));
 			}
 		}
 		free(bat_config);
