@@ -330,21 +330,24 @@ static void bt_av_hdl_a2d_evt(uint16_t event, void *p_param)
         // for now only SBC stream is supported
         if (a2d->audio_cfg.mcc.type == ESP_A2D_MCT_SBC) {
             s_sample_rate = 16000;
-            char oct0 = a2d->audio_cfg.mcc.cie.sbc[0];
-            if (oct0 & (0x01 << 6)) {
+            uint8_t samp_freq = a2d->audio_cfg.mcc.cie.sbc_info.samp_freq;
+            if (samp_freq & (0x01 << 2)) {
                 s_sample_rate = 32000;
-            } else if (oct0 & (0x01 << 5)) {
+            } else if (samp_freq & (0x01 << 1)) {
                 s_sample_rate = 44100;
-            } else if (oct0 & (0x01 << 4)) {
+            } else if (samp_freq & (0x01 << 0)) {
                 s_sample_rate = 48000;
             }
 			(*bt_app_a2d_cmd_cb)(BT_SINK_RATE, s_sample_rate);
             
-            ESP_LOGI(BT_AV_TAG, "Configure audio player %x-%x-%x-%x",
-                     a2d->audio_cfg.mcc.cie.sbc[0],
-                     a2d->audio_cfg.mcc.cie.sbc[1],
-                     a2d->audio_cfg.mcc.cie.sbc[2],
-                     a2d->audio_cfg.mcc.cie.sbc[3]);
+            ESP_LOGI(BT_AV_TAG, "Configure audio player ch:%x freq:%x alloc:%x sub:%x block:%x min_bp:%u max_bp:%u",
+                     a2d->audio_cfg.mcc.cie.sbc_info.ch_mode,
+                     a2d->audio_cfg.mcc.cie.sbc_info.samp_freq,
+                     a2d->audio_cfg.mcc.cie.sbc_info.alloc_mthd,
+                     a2d->audio_cfg.mcc.cie.sbc_info.num_subbands,
+                     a2d->audio_cfg.mcc.cie.sbc_info.block_len,
+                     a2d->audio_cfg.mcc.cie.sbc_info.min_bitpool,
+                     a2d->audio_cfg.mcc.cie.sbc_info.max_bitpool);
             ESP_LOGI(BT_AV_TAG, "Audio player configured, sample rate=%d", s_sample_rate);
         }
         break;
