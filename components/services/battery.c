@@ -14,7 +14,7 @@
 #include "freertos/timers.h"
 #include "esp_system.h"
 #include "esp_log.h"
-#include "driver/adc.h"
+#include "esp_adc/adc_oneshot.h"
 #include "battery.h"
 #include "platform_config.h"
 
@@ -35,9 +35,11 @@ static struct {
 	int count;
 	int cells, attenuation;
 	TimerHandle_t timer;
+	adc_oneshot_unit_handle_t adc_handle;
 } battery = { 
 	.channel = -1,
 	.cells = 2,
+	.adc_handle = NULL,
 };	
 
 void (*battery_handler_svc)(float value, int cells);
@@ -62,13 +64,17 @@ uint8_t battery_level_svc(void) {
  * 
  */
 static void battery_callback(TimerHandle_t xTimer) {
-	battery.sum += adc1_get_raw(battery.channel) * battery.scale / 4095.0;
-	if (++battery.count == 30) {
-		battery.avg = battery.sum / battery.count;
-		battery.sum = battery.count = 0;
-		if (battery_handler_svc) (battery_handler_svc)(battery.avg, battery.cells);
-		ESP_LOGI(TAG, "Voltage %.2fV", battery.avg);
-	}	
+	int adc_raw = 0;
+	if (battery.adc_handle != NULL) {
+		adc_oneshot_read(battery.adc_handle, battery.channel, &adc_raw);
+		battery.sum += adc_raw * battery.scale / 4095.0;
+		if (++battery.count == 30) {
+			battery.avg = battery.sum / battery.count;
+			battery.sum = battery.count = 0;
+			if (battery_handler_svc) (battery_handler_svc)(battery.avg, battery.cells);
+			ESP_LOGI(TAG, "Voltage %.2fV", battery.avg);
+		}	
+	}
 }
 
 /****************************************************************************************
@@ -92,10 +98,23 @@ void battery_svc_init(void) {
 	}	
 
 	if (battery.channel != -1) {
-		adc1_config_width(ADC_WIDTH_BIT_12);
-		adc1_config_channel_atten(battery.channel, battery.attenuation);
+		// Initialize ADC oneshot unit
+		adc_oneshot_unit_init_cfg_t init_config = {
+			.unit_id = ADC_UNIT_1,
+			.ulp_mode = ADC_ULP_MODE_DISABLE,
+		};
+		ESP_ERROR_CHECK(adc_oneshot_new_unit(&init_config, &battery.adc_handle));
 
-		battery.avg = adc1_get_raw(battery.channel) * battery.scale / 4095.0;    
+		// Configure ADC channel
+		adc_oneshot_chan_cfg_t config = {
+			.bitwidth = ADC_BITWIDTH_12,
+			.atten = battery.attenuation,
+		};
+		ESP_ERROR_CHECK(adc_oneshot_config_channel(battery.adc_handle, battery.channel, &config));
+
+		int adc_raw = 0;
+		adc_oneshot_read(battery.adc_handle, battery.channel, &adc_raw);
+		battery.avg = adc_raw * battery.scale / 4095.0;    
 		battery.timer = xTimerCreate("battery", BATTERY_TIMER / portTICK_PERIOD_MS, pdTRUE, NULL, battery_callback);
 		xTimerStart(battery.timer, portMAX_DELAY);
 		

@@ -20,7 +20,7 @@
 #include "cJSON.h"
 #include "driver/gpio.h"
 #include "stdbool.h"
-#include "driver/adc.h"
+#include "esp_adc/adc_oneshot.h"
 #include "esp_attr.h"
 #include "soc/spi_periph.h"
 #include "esp_err.h"
@@ -1212,7 +1212,7 @@ cJSON * get_gpio_list(bool refresh) {
 		int channel = -1;
 		PARSE_PARAM(bat_config, "channel", '=', channel);
 		if(channel != -1){
-			if(adc1_pad_get_io_num(channel,&gpio_num )==ESP_OK){
+			if(adc_continuous_io_to_channel(channel, ADC_UNIT_1, &gpio_num) == ESP_OK){
 				cJSON_AddItemToArray(gpio_list,get_gpio_entry("bat","other",gpio_num,false));
 			}
 		}
