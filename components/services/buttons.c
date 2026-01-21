@@ -20,7 +20,6 @@
 #include "esp_log.h"
 #include "esp_task.h"
 #include "driver/gpio.h"
-#include "driver/rmt.h"
 #include "gpio_exp.h"
 #include "buttons.h"
 #include "services.h"
