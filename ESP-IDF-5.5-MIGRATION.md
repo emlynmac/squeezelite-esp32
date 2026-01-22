@@ -180,9 +180,9 @@ Some Kconfig options may have changed or been removed:
 Before considering the migration complete, test:
 
 1. ✅ **Build**: `idf.py build` succeeds
-2. ⬜ **Flash**: `idf.py flash` works
-3. ⬜ **Boot**: Device boots without errors
-4. ⬜ **WiFi**: WiFi connection works (STA and AP modes)
+2. ✅ **Flash**: `idf.py flash` works
+3. ✅ **Boot**: Device boots without errors
+4. ✅ **WiFi**: WiFi connection works (STA and AP modes)
 5. ⬜ **Audio**: Audio playback works (I2S output)
 6. ⬜ **Bluetooth**: BT audio works (if applicable)
 7. ⬜ **OTA**: Over-the-air updates work

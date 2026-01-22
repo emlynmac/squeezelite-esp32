@@ -97,11 +97,6 @@ int esp_netif_ppp_set_auth_internal(void* netif, int authtype, const char* user,
     return ESP_ERR_NOT_SUPPORTED;
 }
 
-// mbedTLS TLS 1.3 stub (TLS 1.3 not enabled)
-int mbedtls_ssl_tls13_handshake_client_step(void* ssl) {
-    return -1; // MBEDTLS_ERR_SSL_FEATURE_UNAVAILABLE
-}
-
 // ============================================================================
 // IRAM-placed libc function implementations to fix relocation errors
 // These need to be in IRAM to avoid "call target out of range" linker errors

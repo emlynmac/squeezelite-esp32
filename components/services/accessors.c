@@ -1197,7 +1197,7 @@ cJSON * get_psram_gpio_list(cJSON * list){
  *
  */
 cJSON * get_gpio_list(bool refresh) {
-	gpio_num_t gpio_num;
+
 	if(gpio_list && !refresh){
 		return gpio_list;
 	}

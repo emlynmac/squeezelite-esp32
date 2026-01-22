@@ -135,8 +135,8 @@ void setup_rmt_data_buffer(struct led_state new_state)
     for (uint32_t bit = 0; bit < BITS_PER_LED_CMD; bit++) {
       uint32_t bit_is_set = bits_to_send & mask;
       led_data_buffer[led * BITS_PER_LED_CMD + bit] = bit_is_set ?
-                                                      (rmt_item32_t){{{T1H, 1, TL, 0}}} : 
-                                                      (rmt_item32_t){{{T0H, 1, TL, 0}}};
+                                                      (rmt_item32_t){{T1H, 1, TL, 0}} : 
+                                                      (rmt_item32_t){{T0H, 1, TL, 0}};
       mask >>= 1;
     }
   }
