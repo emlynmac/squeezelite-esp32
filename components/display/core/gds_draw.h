@@ -17,8 +17,8 @@
 extern "C" {
 #endif
 
-void IRAM_ATTR GDS_DrawPixelFast( struct GDS_Device* Device, int X, int Y, int Color );
-void IRAM_ATTR GDS_DrawPixel( struct GDS_Device* Device, int X, int Y, int Color );
+void GDS_DrawPixelFast( struct GDS_Device* Device, int X, int Y, int Color );
+void GDS_DrawPixel( struct GDS_Device* Device, int X, int Y, int Color );
 void GDS_DrawHLine( struct GDS_Device* Device, int x, int y, int Width, int Color );
 void GDS_DrawVLine( struct GDS_Device* Device, int x, int y, int Height, int Color );
 void GDS_DrawLine( struct GDS_Device* Device, int x0, int y0, int x1, int y1, int Color );

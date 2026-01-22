@@ -57,7 +57,7 @@ typedef struct {
 
 static const char TAG[] = "gpio expander";
 
-static void   IRAM_ATTR intr_isr_handler(void* arg);
+static void intr_isr_handler(void *arg);
 static gpio_exp_t* find_expander(gpio_exp_t *expander, int *gpio);
 
 static esp_err_t mpr121_init(gpio_exp_t* self);

@@ -1,4 +1,5 @@
 // A minimal set of protobuf messages required to auth through login5, with a stored credential.
+syntax = "proto2";
 message StoredCredential {
   required string username = 1;
   required bytes data = 2;

@@ -523,7 +523,9 @@ static void buffer_put_packet(rtp_t *ctx, seq_t seqno, unsigned rtptime, bool fi
 	}
 
 	if (abuf) {
-		alac_decode(ctx, abuf->data, data, len, &abuf->len);
+		u16_t decoded_len;
+		alac_decode(ctx, abuf->data, data, len, &decoded_len);
+		abuf->len = decoded_len;
 		abuf->ready = 1;
         abuf->missed = 0;
 		// this is the local rtptime when this frame is expected to play

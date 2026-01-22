@@ -1,3 +1,5 @@
+syntax = "proto2";
+
 enum MessageType {
     kMessageTypeHello = 0x1;
     kMessageTypeGoodbye = 0x2;

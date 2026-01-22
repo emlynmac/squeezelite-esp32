@@ -1,3 +1,4 @@
+syntax = "proto2";
 enum CpuFamily {
     CPU_UNKNOWN = 0x0;
     CPU_X86 = 0x1;

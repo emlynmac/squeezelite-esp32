@@ -39,7 +39,6 @@ static const char *TAG = "led";
 
 #define RMT_CLK (40/2)
 
-static rmt_channel_handle_t led_rmt_tx_channel = NULL;
 static uint32_t scale24(uint32_t bright, uint8_t);
 
 // RMT symbol structure for new API
@@ -58,9 +57,9 @@ static const struct rmt_led_param_s {
     rmt_symbol_t bit_1;
     uint32_t green, red;
     uint32_t (*scale)(uint32_t, uint8_t);
-} rmt_led_param[] =  {
-    { LED_WS2812, 24, {{350 / RMT_CLK, 1, 1000 / RMT_CLK, 0}}, {{1000 / RMT_CLK, 1, 350 / RMT_CLK, 0}}, 0xff0000, 0x00ff00, scale24 },
-    { .type = -1 } };
+} rmt_led_param[] = {
+    {LED_WS2812, 24, {350 / RMT_CLK, 1, 1000 / RMT_CLK, 0}, {1000 / RMT_CLK, 1, 350 / RMT_CLK, 0}, 0xff0000, 0x00ff00, scale24},
+    {.type = -1}};
 
 static EXT_RAM_BSS_ATTR struct led_s {
 	gpio_num_t gpio;

@@ -127,13 +127,16 @@ static struct {
     //		struct arg_dbl *control_delay;
     struct arg_end *end;
 } bt_source_args;
-static struct {
+#ifdef CONFIG_CSPOT_SINK
+static struct
+{
     struct arg_str *deviceName;
     //	struct arg_int *volume;
     struct arg_int *bitrate;
     struct arg_int *zeroConf;
     struct arg_end *end;
 } cspot_args;
+#endif
 static struct {
     struct arg_int *clock;
     struct arg_int *wordselect;

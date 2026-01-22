@@ -292,7 +292,7 @@ static esp_err_t nec_parser_get_scan_code(ir_parser_t *parser, uint32_t *address
  * 
  */
 ir_parser_t *ir_parser_rmt_new_nec(const ir_parser_config_t *config) {
-    ir_parser_t *ret = NULL;
+
     nec_parser_t *nec_parser = calloc(1, sizeof(nec_parser_t));
 
     nec_parser->flags = config->flags;
@@ -437,7 +437,7 @@ out:
  * 
  */
 ir_parser_t *ir_parser_rmt_new_rc5(const ir_parser_config_t *config) {
-    ir_parser_t *ret = NULL;
+
     rc5_parser_t *rc5_parser = calloc(1, sizeof(rc5_parser_t));
 
     rc5_parser->flags = config->flags;
