@@ -25,6 +25,7 @@
 
 #include "esp_event.h"
 #include "esp_ota_ops.h"
+#include "esp_timer.h"
 #include "esp_wifi.h"
 #include "esp_wifi_types.h"
 #include "lwip/api.h"

@@ -12,6 +12,7 @@
 #pragma once
 
 #include "sys/time.h"
+#include "esp_timer.h"
 
 #define PERF_MAX LONG_MAX
 #define MIN_MAX_VAL(x) x==PERF_MAX?0:x
