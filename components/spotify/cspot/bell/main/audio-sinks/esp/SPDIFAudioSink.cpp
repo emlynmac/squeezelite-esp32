@@ -1,6 +1,6 @@
 #include "SPDIFAudioSink.h"
 
-#include "driver/i2s.h"
+#include "driver/i2s_std.h"
 
 // See http://www.hardwarebook.info/S/PDIF for more info on this protocol
 // Conversion table to biphase code mark (LSB first, ending in 1)

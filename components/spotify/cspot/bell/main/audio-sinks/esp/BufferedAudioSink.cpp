@@ -1,6 +1,6 @@
 #include "BufferedAudioSink.h"
 
-#include "driver/i2s.h"
+#include "driver/i2s_std.h"
 #include "freertos/ringbuf.h"
 #include "freertos/task.h"
 

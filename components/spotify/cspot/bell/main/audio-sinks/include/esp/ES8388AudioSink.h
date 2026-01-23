@@ -1,7 +1,6 @@
 #ifndef ES8388AUDIOSINK_H
 #define ES8388AUDIOSINK_H
 
-#include <driver/i2c.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
@@ -10,7 +9,7 @@
 #include <iostream>
 #include <vector>
 #include "BufferedAudioSink.h"
-#include "driver/i2s.h"
+#include "driver/i2s_std.h"
 #include "esp_err.h"
 #include "esp_log.h"
 
@@ -94,10 +93,6 @@ class ES8388AudioSink : public BufferedAudioSink {
   void volume(const ES8388_OUT out, const uint8_t vol);
 
   void writeReg(uint8_t reg_add, uint8_t data);
-
- private:
-  i2c_config_t i2c_config;
-  i2c_port_t i2c_port = I2C_NUM_0;
 };
 
 #endif

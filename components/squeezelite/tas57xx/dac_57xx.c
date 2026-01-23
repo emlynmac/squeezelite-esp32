@@ -12,11 +12,11 @@
 #include <string.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include "driver/i2s.h"
-#include "driver/i2c.h"
+#include "driver/i2s_std.h"
 #include "driver/gpio.h"
 #include "esp_log.h"
 #include "adac.h"
+#include "i2c_bus.h"
 
 #define TAS575x (0x98 >> 1)
 #define TAS578x	(0x90 >> 1)
@@ -82,24 +82,16 @@ static bool init(char *config, int i2c_port, i2s_config_param_t *i2s_config, boo
 		return false;
 	}
 
-	i2c_cmd_handle_t i2c_cmd = i2c_cmd_link_create();
-	
+	// Use new I2C API to write init sequence
 	for (int i = 0; tas57xx_init_sequence[i].reg != 0xff; i++) {
-		i2c_master_start(i2c_cmd);
-		i2c_master_write_byte(i2c_cmd, (tas57_addr << 1) | I2C_MASTER_WRITE, I2C_MASTER_NACK);
-		i2c_master_write_byte(i2c_cmd, tas57xx_init_sequence[i].reg, I2C_MASTER_NACK);
-		i2c_master_write_byte(i2c_cmd, tas57xx_init_sequence[i].value, I2C_MASTER_NACK);
+		uint8_t data[2] = { tas57xx_init_sequence[i].reg, tas57xx_init_sequence[i].value };
+		esp_err_t res = i2c_bus_write(tas57_addr, tas57xx_init_sequence[i].reg, &tas57xx_init_sequence[i].value, 1);
+		if (res != ESP_OK) {
+			ESP_LOGE(TAG, "could not initialize TAS57xx reg 0x%02x, err=%d", tas57xx_init_sequence[i].reg, res);
+			return false;
+		}
 		ESP_LOGD(TAG, "i2c write %x at %u", tas57xx_init_sequence[i].reg, tas57xx_init_sequence[i].value);
 	}
-
-	i2c_master_stop(i2c_cmd);	
-	esp_err_t res = i2c_master_cmd_begin(i2c_port, i2c_cmd, 500 / portTICK_PERIOD_MS);
-    i2c_cmd_link_delete(i2c_cmd);
-	
-	if (res != ESP_OK) {
-		ESP_LOGE(TAG, "could not intialize TAS57xx %d", res);
-		return false;
-	}	
 	
 	return true;
 }	

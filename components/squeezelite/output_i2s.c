@@ -33,12 +33,7 @@ sure that using rate_delay would fix that
 #include "squeezelite.h"
 #include "slimproto.h"
 #include "esp_pthread.h"
-#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
 #include "driver/i2s_std.h"
-#else
-#include "driver/i2s.h"
-#endif
-#include "driver/i2c.h"
 #include "driver/gpio.h"
 #include "perf_trace.h"
 #include <signal.h>
@@ -113,7 +108,6 @@ static bool (*slimp_handler_chain)(u8_t *data, int len);
 static bool jack_mutes_amp;
 static bool running, isI2SStarted, ended;
 
-#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
 static i2s_chan_handle_t i2s_tx_handle = NULL;
 typedef struct {
 	uint32_t sample_rate;
@@ -126,9 +120,6 @@ typedef struct {
 	int fixed_mclk;  // Custom field for precise MCLK control
 } i2s_config_compat_t;
 static i2s_config_compat_t i2s_config;
-#else
-static i2s_config_t i2s_config;
-#endif
 
 static u8_t *obuf;
 static frames_t oframes;
@@ -223,9 +214,8 @@ static void set_amp_gpio(int gpio, char *value) {
 #endif
 
 /****************************************************************************************
- * I2S API wrapper functions for ESP-IDF 4.x / 5.x compatibility
+ * I2S API wrapper functions for ESP-IDF 5.x
  */
-#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
 
 typedef struct {
 	int bck_io_num;
@@ -415,8 +405,6 @@ static esp_err_t i2s_write_expand_compat(const void *src, size_t size, size_t sr
 // Pin config compatibility type
 #define i2s_pin_config_t i2s_pin_config_compat_t
 
-#endif  // ESP_IDF_VERSION >= 5.0.0
-
 /****************************************************************************************
  * Get inactivity callback
  */
@@ -432,10 +420,8 @@ static void set_i2s_pin(char *config, i2s_pin_config_t *pin_config) {
 	PARSE_PARAM(config, "bck", '=', pin_config->bck_io_num);
 	PARSE_PARAM(config, "ws", '=', pin_config->ws_io_num);
 	PARSE_PARAM(config, "do", '=', pin_config->data_out_num);
-#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 4, 0)
     pin_config->mck_io_num = strcasestr(config, "mck") ? 0 : -1;
     PARSE_PARAM(config, "mck", '=', pin_config->mck_io_num);   
-#endif    
 }
 
 /* When a panic occurs during playback, the I2S interface can produce a loud noise burst.
@@ -509,7 +495,6 @@ void output_init_i2s(log_level level, char *device, unsigned output_buf_size, ch
     }
     
 	// common I2S initialization
-#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
 	i2s_config.sample_rate = output.current_sample_rate;
 	i2s_config.bits_per_sample = I2S_DATA_BIT_WIDTH_16BIT;
 	i2s_config.channel_format = I2S_SLOT_MODE_STEREO;
@@ -518,19 +503,6 @@ void output_init_i2s(log_level level, char *device, unsigned output_buf_size, ch
 	i2s_config.dma_buf_len = DMA_BUF_FRAMES;	
 	i2s_config.dma_buf_count = DMA_BUF_COUNT;
 	i2s_config.fixed_mclk = 0;  // Will be set by DAC if needed
-#else
-	i2s_config.mode = I2S_MODE_MASTER | I2S_MODE_TX;
-	i2s_config.channel_format = I2S_CHANNEL_FMT_RIGHT_LEFT;
-	i2s_config.communication_format = I2S_COMM_FORMAT_STAND_I2S;
-	// in case of overflow, do not replay old buffer
-	i2s_config.tx_desc_auto_clear = true;		
-#ifndef CONFIG_IDF_TARGET_ESP32S3
-    i2s_config.use_apll = true;
-#endif 
-	i2s_config.intr_alloc_flags = ESP_INTR_FLAG_LEVEL1; //Interrupt level 1
-    i2s_config.dma_buf_len = DMA_BUF_FRAMES;	
-	i2s_config.dma_buf_count = DMA_BUF_COUNT;
-#endif
 	
 	if (strcasestr(device, "spdif")) {
 		spdif.enabled = true;	
@@ -545,11 +517,7 @@ void output_init_i2s(log_level level, char *device, unsigned output_buf_size, ch
 		}
 									
 		i2s_config.sample_rate = output.current_sample_rate * 2;
-#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
 		i2s_config.bits_per_sample = I2S_DATA_BIT_WIDTH_32BIT;
-#else
-		i2s_config.bits_per_sample = 32;
-#endif
 		// Normally counted in frames, but 16 sample are transformed into 32 bits in spdif
 		i2s_config.dma_buf_len = DMA_BUF_FRAMES_SPDIF;	
 		i2s_config.dma_buf_count = DMA_BUF_COUNT_SPDIF;
@@ -568,11 +536,7 @@ void output_init_i2s(log_level level, char *device, unsigned output_buf_size, ch
 		LOG_INFO("SPDIF using I2S bck:%d, ws:%d, do:%d", i2s_spdif_pin.bck_io_num, i2s_spdif_pin.ws_io_num, i2s_spdif_pin.data_out_num);
 	} else {
 		i2s_config.sample_rate = output.current_sample_rate;
-#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
 		i2s_config.bits_per_sample = (BYTES_PER_FRAME * 8 / 2) == 16 ? I2S_DATA_BIT_WIDTH_16BIT : I2S_DATA_BIT_WIDTH_32BIT;
-#else
-		i2s_config.bits_per_sample = BYTES_PER_FRAME * 8 / 2;
-#endif
 		// Counted in frames (but i2s allocates a buffer <= 4092 bytes)
 		i2s_config.dma_buf_len = DMA_BUF_FRAMES;	
 		i2s_config.dma_buf_count = DMA_BUF_COUNT;
@@ -593,25 +557,8 @@ void output_init_i2s(log_level level, char *device, unsigned output_buf_size, ch
         bool mck_required = false;
 		for (int i = 0; adac == &dac_external && dac_set[i]; i++) if (strcasestr(dac_set[i]->model, model)) adac = dac_set[i];
 		res = adac->init(dac_config, I2C_PORT, (i2s_config_param_t *)&i2s_config, &mck_required) ? ESP_OK : ESP_FAIL;
-#if ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(5, 0, 0)
-        LOG_INFO("configuring MCLK on GPIO %d", i2s_dac_pin.mck_io_num);
-
-        if (i2s_dac_pin.mck_io_num == GPIO_NUM_0) {
-            PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO0_U, FUNC_GPIO0_CLK_OUT1);
-            WRITE_PERI_REG(PIN_CTRL, CONFIG_I2S_NUM == I2S_NUM_0 ? 0xFFF0 : 0xFFFF);
-        } else if (i2s_dac_pin.mck_io_num == GPIO_NUM_1) {
-            PIN_FUNC_SELECT(PERIPHS_IO_MUX_U0TXD_U, FUNC_U0TXD_CLK_OUT3);
-            WRITE_PERI_REG(PIN_CTRL, CONFIG_I2S_NUM == I2S_NUM_0 ? 0xF0F0 : 0xF0FF);
-        } else if (i2s_dac_pin.mck_io_num == GPIO_NUM_2) {
-            PIN_FUNC_SELECT(PERIPHS_IO_MUX_U0RXD_U, FUNC_U0RXD_CLK_OUT2);
-            WRITE_PERI_REG(PIN_CTRL, CONFIG_I2S_NUM == I2S_NUM_0 ? 0xFF00 : 0xFF0F);
-        } else {
-            LOG_WARN("invalid MCK gpio %d", i2s_dac_pin.mck_io_num);
-        }
-#else
         if (mck_required && i2s_dac_pin.mck_io_num == -1) i2s_dac_pin.mck_io_num = 0;
-        LOG_INFO("configuring MCLK on GPIO %d", i2s_dac_pin.mck_io_num);
-#endif    
+        LOG_INFO("configuring MCLK on GPIO %d", i2s_dac_pin.mck_io_num);    
        
 		res |= i2s_driver_install(CONFIG_I2S_NUM, &i2s_config, 0, NULL);
 		res |= i2s_set_pin(CONFIG_I2S_NUM, &i2s_dac_pin);

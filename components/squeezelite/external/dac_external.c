@@ -11,8 +11,7 @@
  
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
-#include <driver/i2s.h>
-#include "driver/i2c.h"
+#include "driver/i2s_std.h"
 #include "esp_log.h"
 #include "gpio_exp.h"
 #include "cJSON.h"

@@ -1,4 +1,5 @@
 #include "ES8388AudioSink.h"
+#include "i2c_bus.h"
 
 struct es8388_cmd_s {
   uint8_t reg;
@@ -6,17 +7,6 @@ struct es8388_cmd_s {
 };
 
 ES8388AudioSink::ES8388AudioSink() {
-  // configure i2c
-  i2c_config = {
-      .mode = I2C_MODE_MASTER,
-      .sda_io_num = 33,
-      .scl_io_num = 32,
-      .sda_pullup_en = GPIO_PULLUP_ENABLE,
-      .scl_pullup_en = GPIO_PULLUP_ENABLE,
-  };
-
-  i2c_config.master.clk_speed = 100000;
-
   i2s_config_t i2s_config = {
       .mode = (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_TX),  // Only TX
       .sample_rate = 44100,
@@ -49,21 +39,12 @@ ES8388AudioSink::ES8388AudioSink() {
     ESP_LOGE("OI", "i2s set pin error: %d", err);
   }
 
-  err = i2c_param_config(I2C_NUM_0, &i2c_config);
-  if (err != ESP_OK) {
-    ESP_LOGE("OI", "i2c param config error: %d", err);
-  }
-
-  err = i2c_driver_install(I2C_NUM_0, I2C_MODE_MASTER, 0, 0, 0);
-  if (err != ESP_OK) {
-    ESP_LOGE("OI", "i2c driver installation error: %d", err);
-  }
-
-  i2c_cmd_handle_t i2c_cmd = i2c_cmd_link_create();
-
-  err = i2c_master_start(i2c_cmd);
-  if (err != ESP_OK) {
-    ESP_LOGE("OI", "i2c master start error: %d", err);
+  // Initialize I2C bus if not already done (uses centralized i2c_bus service)
+  if (!i2c_bus_is_initialized()) {
+    err = i2c_bus_init(0, 33, 32, 100000);  // Port 0, SDA=33, SCL=32, 100kHz
+    if (err != ESP_OK) {
+      ESP_LOGE("OI", "i2c bus init error: %d", err);
+    }
   }
 
   /* mute DAC during setup, power up all systems, slave mode */
@@ -124,21 +105,12 @@ ES8388AudioSink::ES8388AudioSink() {
 }
 
 void ES8388AudioSink::writeReg(uint8_t reg_add, uint8_t data) {
-
-  int res = 0;
-  i2c_cmd_handle_t cmd = i2c_cmd_link_create();
-  res |= i2c_master_start(cmd);
-  res |= i2c_master_write_byte(cmd, ES8388_ADDR, ACK_CHECK_EN);
-  res |= i2c_master_write_byte(cmd, reg_add, ACK_CHECK_EN);
-  res |= i2c_master_write_byte(cmd, data, ACK_CHECK_EN);
-  res |= i2c_master_stop(cmd);
-  res |= i2c_master_cmd_begin(I2C_NUM_0, cmd, 1000 / portTICK_PERIOD_MS);
-  i2c_cmd_link_delete(cmd);
+  esp_err_t res = i2c_bus_write_byte(ES8388_ADDR, reg_add, data);
 
   if (res != ESP_OK) {
     ESP_LOGE("RR", "Unable to write to ES8388: %d", res);
   } else {
-    ESP_LOGE("RR", "register successfull written.");
+    ESP_LOGD("RR", "register successfully written.");
   }
 }
 

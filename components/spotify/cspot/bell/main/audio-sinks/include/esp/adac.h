@@ -9,7 +9,7 @@
  *
  */
 
-#include "driver/i2s.h"
+#include "driver/i2s_std.h"
 #include "freertos/FreeRTOS.h"
 
 typedef enum { ADAC_ON = 0, ADAC_STANDBY, ADAC_OFF } adac_power_e;

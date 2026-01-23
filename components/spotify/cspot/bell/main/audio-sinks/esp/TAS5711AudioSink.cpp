@@ -1,4 +1,5 @@
 #include "TAS5711AudioSink.h"
+#include "i2c_bus.h"
 
 struct tas5711_cmd_s {
   uint8_t reg;
@@ -14,7 +15,6 @@ static const struct tas5711_cmd_s tas5711_init_sequence[] = {
     {0xff, 0xff}
 
 };
-i2c_ack_type_t ACK_CHECK_EN = (i2c_ack_type_t)0x1;
 
 TAS5711AudioSink::TAS5711AudioSink() {
   i2s_config_t i2s_config = {
@@ -40,34 +40,14 @@ TAS5711AudioSink::TAS5711AudioSink() {
   i2s_driver_install((i2s_port_t)0, &i2s_config, 0, NULL);
   i2s_set_pin((i2s_port_t)0, &pin_config);
 
-  // configure i2c
-  i2c_config = {
-      .mode = I2C_MODE_MASTER,
-      .sda_io_num = 21,
-      .scl_io_num = 23,
-      .sda_pullup_en = GPIO_PULLUP_DISABLE,
-      .scl_pullup_en = GPIO_PULLUP_DISABLE,
-  };
-
-  i2c_config.master.clk_speed = 250000;
-
-  i2c_param_config(i2c_port, &i2c_config);
-  i2c_driver_install(i2c_port, I2C_MODE_MASTER, false, false, false);
-  i2c_cmd_handle_t i2c_cmd = i2c_cmd_link_create();
-
-  uint8_t data, addr = (0x1b);
-
-  i2c_master_start(i2c_cmd);
-  i2c_master_write_byte(i2c_cmd, (addr << 1) | I2C_MASTER_WRITE, ACK_CHECK_EN);
-  i2c_master_write_byte(i2c_cmd, 00, ACK_CHECK_EN);
-
-  i2c_master_start(i2c_cmd);
-  i2c_master_write_byte(i2c_cmd, (addr << 1) | I2C_MASTER_READ, ACK_CHECK_EN);
-  i2c_master_read_byte(i2c_cmd, &data, ACK_CHECK_EN);
-
-  i2c_master_stop(i2c_cmd);
-  int ret = i2c_master_cmd_begin(i2c_port, i2c_cmd, 50 / portTICK_PERIOD_MS);
-  i2c_cmd_link_delete(i2c_cmd);
+  // Initialize I2C bus if not already done (uses centralized i2c_bus service)
+  if (!i2c_bus_is_initialized()) {
+    i2c_bus_init(0, 21, 23, 250000);  // Port 0, SDA=21, SCL=23, 250kHz
+  }
+  
+  // Try to detect the TAS5711
+  uint8_t data;
+  esp_err_t ret = i2c_bus_read(TAS5711_ADDR, 0x00, &data, 1);
 
   if (ret == ESP_OK) {
     ESP_LOGI("RR", "Detected TAS");
@@ -87,21 +67,11 @@ TAS5711AudioSink::TAS5711AudioSink() {
 }
 
 void TAS5711AudioSink::writeReg(uint8_t reg, uint8_t value) {
-  i2c_cmd_handle_t i2c_cmd = i2c_cmd_link_create();
-
-  i2c_master_start(i2c_cmd);
-  i2c_master_write_byte(i2c_cmd, (0x1b << 1) | I2C_MASTER_WRITE, ACK_CHECK_EN);
-  i2c_master_write_byte(i2c_cmd, reg, ACK_CHECK_EN);
-  i2c_master_write_byte(i2c_cmd, value, ACK_CHECK_EN);
-
-  i2c_master_stop(i2c_cmd);
-  esp_err_t res =
-      i2c_master_cmd_begin(i2c_port, i2c_cmd, 500 / portTICK_PERIOD_MS);
+  esp_err_t res = i2c_bus_write_byte(TAS5711_ADDR, reg, value);
 
   if (res != ESP_OK) {
     ESP_LOGE("RR", "Unable to write to TAS5711");
   }
-  i2c_cmd_link_delete(i2c_cmd);
 }
 
 TAS5711AudioSink::~TAS5711AudioSink() {}

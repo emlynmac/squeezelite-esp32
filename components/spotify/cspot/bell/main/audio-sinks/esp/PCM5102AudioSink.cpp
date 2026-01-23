@@ -1,6 +1,6 @@
 #include "PCM5102AudioSink.h"
 
-#include "driver/i2s.h"
+#include "driver/i2s_std.h"
 
 PCM5102AudioSink::PCM5102AudioSink() {
   i2s_config_t i2s_config = {

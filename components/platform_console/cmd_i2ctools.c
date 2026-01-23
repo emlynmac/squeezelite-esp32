@@ -12,7 +12,7 @@
 #include "accessors.h"
 #include "argtable3/argtable3.h"
 #include "display.h"
-#include "driver/i2c.h"
+#include "i2c_bus.h"
 #include "esp_log.h"
 #include "messaging.h"
 #include "platform_config.h"
@@ -24,8 +24,8 @@
 
 #define I2C_MASTER_TX_BUF_DISABLE 0 /*!< I2C master doesn't need buffer */
 #define I2C_MASTER_RX_BUF_DISABLE 0 /*!< I2C master doesn't need buffer */
-#define WRITE_BIT I2C_MASTER_WRITE  /*!< I2C master write */
-#define READ_BIT I2C_MASTER_READ    /*!< I2C master read */
+#define WRITE_BIT 0  /*!< I2C master write */
+#define READ_BIT 1   /*!< I2C master read */
 #define ACK_CHECK_EN 0x1            /*!< I2C master will check ack from slave*/
 #define ACK_CHECK_DIS 0x0           /*!< I2C master will not check ack from slave */
 #define ACK_VAL 0x0                 /*!< I2C ack value */
@@ -37,6 +37,14 @@ static const char* TAG = "cmd_i2ctools";
 const char* desc_spiconfig = "SPI Bus Parameters";
 const char* desc_i2c = "I2C Bus Parameters";
 const char* desc_display = "Display";
+
+// Port number constants for new API (i2c_port_t is defined by SDK)
+#define I2C_NUM_0 0
+#define I2C_NUM_1 1
+#define I2C_NUM_MAX 2
+
+// Legacy I2C mode for config (not used in new API)
+#define I2C_MODE_MASTER 0
 
 #ifdef CONFIG_I2C_LOCKED
 static i2c_port_t i2c_port = I2C_NUM_1;
@@ -105,22 +113,11 @@ static struct {
 } i2cdisp_args;
 
 bool is_i2c_started (i2c_port_t port) {
-    esp_err_t ret = ESP_OK;
-    ESP_LOGD (TAG, "Determining if i2c is started on port %u", port);
-    i2c_cmd_handle_t cmd = i2c_cmd_link_create ();
-    ret = i2c_master_start (cmd);
-    if (ret == ESP_OK) {
-        ret = i2c_master_write_byte (cmd, WRITE_BIT, ACK_CHECK_EN);
-    }
-    if (ret == ESP_OK) {
-        ret = i2c_master_stop (cmd);
-    }
-    if (ret == ESP_OK) {
-        ret = i2c_master_cmd_begin (port, cmd, 50 / portTICK_PERIOD_MS);
-    }
-    i2c_cmd_link_delete (cmd);
-    ESP_LOGD (TAG, "i2c is %s. %s", ret != ESP_ERR_INVALID_STATE ? "started" : "not started", esp_err_to_name (ret));
-    return (ret != ESP_ERR_INVALID_STATE);
+    (void)port;  // Port is managed by i2c_bus service
+    ESP_LOGD (TAG, "Determining if i2c is started");
+    bool started = i2c_bus_is_initialized();
+    ESP_LOGD (TAG, "i2c is %s", started ? "started" : "not started");
+    return started;
 }
 
 typedef struct {
@@ -276,19 +273,26 @@ static esp_err_t i2c_get_port (int port, i2c_port_t* i2c_port) {
     return ESP_OK;
 }
 static esp_err_t i2c_master_driver_install (const char* cmdname) {
-    esp_err_t err = ESP_OK;
-    cmd_send_messaging (cmdname, MESSAGING_INFO, "Installing i2c driver on port %u\n", i2c_port);
-    if ((err = i2c_driver_install (i2c_port, I2C_MODE_MASTER, I2C_MASTER_RX_BUF_DISABLE, I2C_MASTER_TX_BUF_DISABLE, 0)) != ESP_OK) {
-        cmd_send_messaging (cmdname, MESSAGING_ERROR, "Driver install failed! %s\n", esp_err_to_name (err));
+    // No-op with new API - bus should already be initialized by services
+    cmd_send_messaging (cmdname, MESSAGING_INFO, "I2C driver (using new i2c_master API)\n");
+    if (!i2c_bus_is_initialized()) {
+        cmd_send_messaging (cmdname, MESSAGING_WARNING, "I2C bus not initialized! Configure via i2c_config.\n");
+        return ESP_ERR_INVALID_STATE;
     }
-    return err;
+    return ESP_OK;
 }
 
-static esp_err_t i2c_master_driver_initialize (const char* cmdname, i2c_config_t* conf) {
+static esp_err_t i2c_master_driver_initialize (const char* cmdname, const i2c_config_t* conf) {
     esp_err_t err = ESP_OK;
-    cmd_send_messaging (cmdname, MESSAGING_INFO, "Initializing i2c driver configuration.\n   mode = I2C_MODE_MASTER, \n   scl_pullup_en = GPIO_PULLUP_ENABLE, \n   i2c port = %u, \n   sda_io_num = %u, \n   sda_pullup_en = GPIO_PULLUP_ENABLE, \n   scl_io_num = %u, \n   scl_pullup_en = GPIO_PULLUP_ENABLE, \n   master.clk_speed = %u\n", i2c_port, conf->sda_io_num, conf->scl_io_num, conf->master.clk_speed);
-    if ((err = i2c_param_config (i2c_port, conf)) != ESP_OK) {
-        cmd_send_messaging (cmdname, MESSAGING_ERROR, "i2c driver config load failed. %s\n", esp_err_to_name (err));
+    cmd_send_messaging (cmdname, MESSAGING_INFO, "Initializing i2c driver configuration.\n   i2c port = %u, \n   sda_io_num = %d, \n   scl_io_num = %d, \n   master.clk_speed = %d\n", i2c_port, conf->sda_io_num, conf->scl_io_num, conf->master.clk_speed);
+    
+    if (!i2c_bus_is_initialized()) {
+        err = i2c_bus_init(i2c_port, conf->sda_io_num, conf->scl_io_num, conf->master.clk_speed);
+        if (err != ESP_OK) {
+            cmd_send_messaging (cmdname, MESSAGING_ERROR, "i2c bus init failed. %s\n", esp_err_to_name (err));
+        }
+    } else {
+        cmd_send_messaging (cmdname, MESSAGING_INFO, "I2C bus already initialized\n");
     }
     return err;
 }
@@ -547,12 +551,11 @@ static int do_i2cconfig_cmd (int argc, char** argv) {
     }
 #endif
     if (!nerrors) {
-        fprintf (f, "Uninstalling i2c driver from port %u if needed\n", i2c_port);
-        if (is_i2c_started (i2c_port)) {
-            if ((err = i2c_driver_delete (i2c_port)) != ESP_OK) {
-                fprintf (f, "i2c driver delete failed. %s\n", esp_err_to_name (err));
-                nerrors++;
-            }
+        fprintf (f, "Checking i2c bus state on port %u\n", i2c_port);
+        if (i2c_bus_is_initialized()) {
+            fprintf (f, "I2C bus already initialized, reconfiguration not supported with new driver\n");
+            // Note: The new i2c_master driver doesn't support runtime reconfiguration
+            // The bus configuration is set at services init time
         }
     }
     if (!nerrors) {
@@ -622,19 +625,8 @@ static int do_i2cdump_cmd (int argc, char** argv) {
         for (int j = 0; j < 16; j += size) {
             fflush (stdout);
             data_addr = i + j;
-            i2c_cmd_handle_t cmd = i2c_cmd_link_create ();
-            i2c_master_start (cmd);
-            i2c_master_write_byte (cmd, chip_addr << 1 | WRITE_BIT, ACK_CHECK_EN);
-            i2c_master_write_byte (cmd, data_addr, ACK_CHECK_EN);
-            i2c_master_start (cmd);
-            i2c_master_write_byte (cmd, chip_addr << 1 | READ_BIT, ACK_CHECK_EN);
-            if (size > 1) {
-                i2c_master_read (cmd, data, size - 1, ACK_VAL);
-            }
-            i2c_master_read_byte (cmd, data + size - 1, NACK_VAL);
-            i2c_master_stop (cmd);
-            esp_err_t ret = i2c_master_cmd_begin (loc_i2c_port, cmd, 50 / portTICK_PERIOD_MS);
-            i2c_cmd_link_delete (cmd);
+            // Use new i2c_bus API for read
+            esp_err_t ret = i2c_bus_read(chip_addr, data_addr, data, size);
             if (ret == ESP_OK) {
                 for (int k = 0; k < size; k++) {
                     fprintf (f, "%02x ", data[k]);
@@ -692,24 +684,30 @@ static int do_i2cset_cmd (int argc, char** argv) {
     /* Check data: "-d" option */
     int len = i2cset_args.data->count;
 
-    i2c_cmd_handle_t cmd = i2c_cmd_link_create ();
-    i2c_master_start (cmd);
-    i2c_master_write_byte (cmd, chip_addr << 1 | WRITE_BIT, ACK_CHECK_EN);
-    if (i2cset_args.register_address->count) {
-        i2c_master_write_byte (cmd, data_addr, ACK_CHECK_EN);
+    // Build data buffer
+    uint8_t* write_data = malloc(len);
+    if (write_data == NULL) {
+        cmd_send_messaging (argv[0], MESSAGING_ERROR, "Memory allocation failed\n");
+        return 1;
     }
     for (int i = 0; i < len; i++) {
-        i2c_master_write_byte (cmd, i2cset_args.data->ival[i], ACK_CHECK_EN);
+        write_data[i] = (uint8_t)i2cset_args.data->ival[i];
     }
-    i2c_master_stop (cmd);
-    esp_err_t ret = i2c_master_cmd_begin (loc_i2c_port, cmd, 1000 / portTICK_PERIOD_MS);
-    i2c_cmd_link_delete (cmd);
+    
+    esp_err_t ret;
+    if (i2cset_args.register_address->count) {
+        ret = i2c_bus_write(chip_addr, data_addr, write_data, len);
+    } else {
+        ret = i2c_bus_write(chip_addr, 0xFF, write_data, len);  // 0xFF = no register
+    }
+    free(write_data);
+    
     if (ret == ESP_OK) {
         cmd_send_messaging (argv[0], MESSAGING_INFO, "i2c Write OK\n");
     } else if (ret == ESP_ERR_TIMEOUT) {
         cmd_send_messaging (argv[0], MESSAGING_WARNING, "i2c Bus is busy\n");
     } else {
-        cmd_send_messaging (argv[0], MESSAGING_ERROR, "i2c Read failed\n");
+        cmd_send_messaging (argv[0], MESSAGING_ERROR, "i2c Write failed\n");
     }
     // Don't stop the driver;  our firmware may be using it for screen, etc
     // i2c_driver_delete(i2c_port);
@@ -746,22 +744,16 @@ static int do_i2cget_cmd (int argc, char** argv) {
         cmd_send_messaging (argv[0], MESSAGING_ERROR, "Unable to open memory stream.\n");
         return 1;
     }
-    i2c_cmd_handle_t cmd = i2c_cmd_link_create ();
-    i2c_master_start (cmd);
     uint8_t* data = malloc_init_external (len);
+    
+    // Use new i2c_bus API for read
+    esp_err_t ret;
     if (data_addr != -1) {
-        i2c_master_write_byte (cmd, chip_addr << 1 | WRITE_BIT, ACK_CHECK_EN);
-        i2c_master_write_byte (cmd, data_addr, ACK_CHECK_EN);
-        i2c_master_start (cmd);
+        ret = i2c_bus_read(chip_addr, data_addr, data, len);
+    } else {
+        ret = i2c_bus_read(chip_addr, 0xFF, data, len);  // 0xFF = no register
     }
-    i2c_master_write_byte (cmd, chip_addr << 1 | READ_BIT, ACK_CHECK_EN);
-    if (len > 1) {
-        i2c_master_read (cmd, data, len - 1, ACK_VAL);
-    }
-    i2c_master_read_byte (cmd, data + len - 1, NACK_VAL);
-    i2c_master_stop (cmd);
-    esp_err_t ret = i2c_master_cmd_begin (loc_i2c_port, cmd, 1000 / portTICK_PERIOD_MS);
-    i2c_cmd_link_delete (cmd);
+    
     if (ret == ESP_OK) {
         for (int i = 0; i < len; i++) {
             fprintf (f, "0x%02x ", data[i]);
@@ -804,37 +796,30 @@ esp_err_t cmd_i2ctools_scan_bus (FILE* f, int sda, int scl) {
         .sda_pullup_en = GPIO_PULLUP_ENABLE,
         .scl_io_num = -1,
         .scl_pullup_en = GPIO_PULLUP_ENABLE,
-        .master.clk_speed = 250000,
+        .master = { .clk_speed = 250000 },
     };
 
     i2c_config.sda_io_num = sda;
     i2c_config.scl_io_num = scl;
-    // we have an I2C configured
-    i2c_port_t i2c_port = 0;
-    // make sure that we don't have an i2c driver running
-    i2c_driver_delete (i2c_port);
-    ret = i2c_param_config (i2c_port, &i2c_config);
-    if (ret != ESP_OK) {
-        fprintf (f, "I2C Param Config failed %s\n", esp_err_to_name (ret));
-        return ret;
+    
+    // Initialize I2C bus if not already done
+    if (!i2c_bus_is_initialized()) {
+        ret = i2c_bus_init(0, sda, scl, i2c_config.master.clk_speed);
+        if (ret != ESP_OK) {
+            fprintf (f, "I2C bus init failed %s\n", esp_err_to_name (ret));
+            return ret;
+        }
     }
-    ret = i2c_driver_install (i2c_port, I2C_MODE_MASTER, false, false, false);
-    if (ret != ESP_OK) {
-        fprintf (f, "I2C driver install failed %s\n", esp_err_to_name (ret));
-        return ret;
-    }
+    
+    // Scan for devices using the new API
     for (int i = 0; i < 128; i++) {
-        i2c_cmd_handle_t cmd = i2c_cmd_link_create ();
-        i2c_master_start (cmd);
-        i2c_master_write_byte (cmd, (i << 1) | WRITE_BIT, ACK_CHECK_EN);
-        i2c_master_stop (cmd);
-        ret = i2c_master_cmd_begin (i2c_port, cmd, 50 / portTICK_PERIOD_MS);
-        i2c_cmd_link_delete (cmd);
+        uint8_t dummy;
+        ret = i2c_bus_read(i, 0xFF, &dummy, 1);  // Try to read from device
         if (ret == ESP_OK) {
             matches[++last_match - 1] = i;
         }
     }
-    i2c_driver_delete (i2c_port);
+    
     if (last_match) {
         fprintf (f, "i2c device detected (names provided by https://i2cdevices.org/addresses).\n");
         for (int i = 0; i < last_match; i++) {
@@ -869,12 +854,9 @@ static int do_i2cdetect_cmd (int argc, char** argv) {
         fprintf (f, "%02x: ", i);
         for (int j = 0; j < 16; j++) {
             address = i + j;
-            i2c_cmd_handle_t cmd = i2c_cmd_link_create ();
-            i2c_master_start (cmd);
-            i2c_master_write_byte (cmd, (address << 1) | WRITE_BIT, ACK_CHECK_EN);
-            i2c_master_stop (cmd);
-            ret = i2c_master_cmd_begin (loc_i2c_port, cmd, 50 / portTICK_PERIOD_MS);
-            i2c_cmd_link_delete (cmd);
+            // Use new i2c_bus API for device detection
+            uint8_t dummy;
+            ret = i2c_bus_read(address, 0xFF, &dummy, 1);
             if (ret == ESP_OK) {
                 fprintf (f, "%02x ", address);
                 matches[++last_match - 1] = address;

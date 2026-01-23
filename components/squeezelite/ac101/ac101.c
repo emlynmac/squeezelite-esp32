@@ -28,8 +28,7 @@
 #include <esp_system.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
-#include <driver/i2c.h>
-#include <driver/i2s.h>
+#include "driver/i2s_std.h"
 #include "adac.h"
 #include "ac101.h"
 
@@ -68,7 +67,8 @@ static bool init(char *config, int i2c_port, i2s_config_param_t *i2s_config, boo
 	adac_init(config, i2c_port);
 	if (adac_read_word(AC101_ADDR, CHIP_AUDIO_RS) == 0xffff) {
 		ESP_LOGW(TAG, "No AC101 detected");
-		i2c_driver_delete(i2c_port);
+		// Note: With new i2c_master driver, bus is managed by i2c_bus service
+		// No need to delete driver here
 		return false;		
 	}
 	

@@ -1,6 +1,6 @@
 #include "AC101AudioSink.h"
 
-#include "driver/i2s.h"
+#include "driver/i2s_std.h"
 
 AC101AudioSink::AC101AudioSink() {
   // Disable software volume control, all handled by ::volumeChanged

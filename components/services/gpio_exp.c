@@ -15,7 +15,7 @@
 #include "esp_task.h"
 #include "esp_log.h"
 #include "driver/gpio.h"
-#include "driver/i2c.h"
+#include "i2c_bus.h"
 #include "driver/spi_master.h"
 #include "gpio_exp.h"
 
@@ -703,57 +703,42 @@ static void aw9523_write(gpio_exp_t* self) {
 ***************************************************************************************/
 
 /****************************************************************************************
- * I2C write up to 32 bits
+ * I2C write up to 32 bits (using new i2c_master driver)
  */
 static esp_err_t i2c_write(uint8_t port, uint8_t addr, uint8_t reg, uint32_t data, int len) {
-	i2c_cmd_handle_t cmd = i2c_cmd_link_create();
-    i2c_master_start(cmd);
+	(void)port;  // port is managed by i2c_bus
 	
-	i2c_master_write_byte(cmd, (addr << 1) | I2C_MASTER_WRITE, I2C_MASTER_NACK);
-	if (reg != 0xff) i2c_master_write_byte(cmd, reg, I2C_MASTER_NACK);
-
-	// works with our endianness
-	if (len > 1) i2c_master_write(cmd, (uint8_t*) &data, len, I2C_MASTER_NACK);
-	else i2c_master_write_byte(cmd, data, I2C_MASTER_NACK);
-    
-	i2c_master_stop(cmd);
-	esp_err_t ret = i2c_master_cmd_begin(port, cmd, 100 / portTICK_PERIOD_MS);
-    i2c_cmd_link_delete(cmd);
+	// Build data buffer - endianness matches the old driver behavior
+	uint8_t buf[5];
+	int buf_len = 0;
+	
+	if (reg != 0xff) {
+		buf[buf_len++] = reg;
+	}
+	
+	// Copy data bytes (little endian)
+	for (int i = 0; i < len; i++) {
+		buf[buf_len++] = (data >> (i * 8)) & 0xFF;
+	}
+	
+	// Use 0xFF as "no register" marker for i2c_bus_write when reg already in buffer
+	esp_err_t ret = i2c_bus_write(addr, 0xFF, buf, buf_len);
 	
 	if (ret != ESP_OK) {		
 		ESP_LOGW(TAG, "I2C write failed");
 	}
 	
-    return ret;
+	return ret;
 }
 
 /****************************************************************************************
- * I2C read up to 32 bits
+ * I2C read up to 32 bits (using new i2c_master driver)
  */
 static uint32_t i2c_read(uint8_t port, uint8_t addr, uint8_t reg, int len) {
+	(void)port;  // port is managed by i2c_bus
 	uint32_t data = 0;
 	
-	i2c_cmd_handle_t cmd = i2c_cmd_link_create();
-
-    i2c_master_start(cmd);
-
-	// when using a register, write it's value then the device address again
-	if (reg != 0xff) {
-		i2c_master_write_byte(cmd, (addr << 1) | I2C_MASTER_WRITE, I2C_MASTER_NACK);
-		i2c_master_write_byte(cmd, reg, I2C_MASTER_NACK);
-		i2c_master_start(cmd);
-		i2c_master_write_byte(cmd, (addr << 1) | I2C_MASTER_READ, I2C_MASTER_NACK);
-	} else {
-		i2c_master_write_byte(cmd, (addr << 1) | I2C_MASTER_READ, I2C_MASTER_NACK);
-	}
-	
-	// works with our endianness
-	if (len > 1) i2c_master_read(cmd, (uint8_t*) &data, len, I2C_MASTER_LAST_NACK);
-	else i2c_master_read_byte(cmd, (uint8_t*) &data, I2C_MASTER_NACK);
-		
-    i2c_master_stop(cmd);
-    esp_err_t ret = i2c_master_cmd_begin(port, cmd, 100 / portTICK_PERIOD_MS);
-    i2c_cmd_link_delete(cmd);
+	esp_err_t ret = i2c_bus_read(addr, reg, (uint8_t*)&data, len);
 	
 	if (ret != ESP_OK) {
 		ESP_LOGW(TAG, "I2C read failed");

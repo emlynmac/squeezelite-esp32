@@ -23,8 +23,8 @@
  */
 
 #include "ac101.h"
-#include <driver/i2c.h>
-#include <driver/i2s.h>
+#include "i2c_bus.h"
+#include "driver/i2s_std.h"
 #include <esp_log.h>
 #include <esp_system.h>
 #include <esp_types.h>
@@ -41,6 +41,11 @@ const static char TAG[] = "AC101";
 
 #define min(a, b) (((a) < (b)) ? (a) : (b))
 #define max(a, b) (((a) > (b)) ? (a) : (b))
+
+#define ACK_CHECK_EN 0x1
+#define WRITE_BIT 0
+#define READ_BIT 1
+#define ACK_VAL 0x0
 
 #define AC_ASSERT(a, format, b, ...)      \
   if ((a) != 0) {                         \
@@ -75,29 +80,23 @@ static bool init(int i2c_port_num, int i2s_num, i2s_config_t* i2s_config) {
 
   i2c_port = i2c_port_num;
 
-  // configure i2c
-  i2c_config_t i2c_config = {
-      .mode = I2C_MODE_MASTER,
-      .sda_io_num = 33,
-      .sda_pullup_en = GPIO_PULLUP_ENABLE,
-      .scl_io_num = 32,
-      .scl_pullup_en = GPIO_PULLUP_ENABLE,
-      .master.clk_speed = 250000,
-  };
-
-  i2c_param_config(i2c_port, &i2c_config);
-  i2c_driver_install(i2c_port, I2C_MODE_MASTER, false, false, false);
+  // Initialize I2C bus if not already done (uses centralized i2c_bus service)
+  if (!i2c_bus_is_initialized()) {
+    res = i2c_bus_init(i2c_port, 33, 32, 250000);  // SDA=33, SCL=32, 250kHz
+    if (res != ESP_OK) {
+      ESP_LOGW(TAG, "Failed to initialize I2C bus");
+      return false;
+    }
+  }
 
   res = i2c_read_reg(CHIP_AUDIO_RS);
 
   if (!res) {
     ESP_LOGW(TAG, "No AC101 detected");
-    i2c_driver_delete(i2c_port);
     return 0;
   }
 
-  ESP_LOGI(TAG, "AC101 DAC using I2C sda:%u, scl:%u", i2c_config.sda_io_num,
-           i2c_config.scl_io_num);
+  ESP_LOGI(TAG, "AC101 DAC using I2C sda:33, scl:32");
 
   res = i2c_write_reg(CHIP_AUDIO_RS, 0x123);
   // huh?
@@ -184,7 +183,7 @@ static bool init(int i2c_port_num, int i2s_num, i2s_config_t* i2s_config) {
  * init
  */
 static void deinit(void) {
-  i2c_driver_delete(i2c_port);
+  // I2C bus is managed centrally, don't deinit here
 }
 
 /****************************************************************************************
@@ -240,19 +239,8 @@ static void headset(bool active) {
  * 
  */
 static esp_err_t i2c_write_reg(uint8_t reg, uint16_t val) {
-  i2c_cmd_handle_t cmd = i2c_cmd_link_create();
-  esp_err_t ret = 0;
-  uint8_t send_buff[4];
-  send_buff[0] = (AC101_ADDR << 1);
-  send_buff[1] = reg;
-  send_buff[2] = (val >> 8) & 0xff;
-  send_buff[3] = val & 0xff;
-  ret |= i2c_master_start(cmd);
-  ret |= i2c_master_write(cmd, send_buff, 4, ACK_CHECK_EN);
-  ret |= i2c_master_stop(cmd);
-  ret |= i2c_master_cmd_begin(i2c_port, cmd, 1000 / portTICK_PERIOD_MS);
-  i2c_cmd_link_delete(cmd);
-  return ret;
+  uint8_t data[2] = { (val >> 8) & 0xff, val & 0xff };
+  return i2c_bus_write(AC101_ADDR, reg, data, 2);
 }
 
 /****************************************************************************************
@@ -260,21 +248,13 @@ static esp_err_t i2c_write_reg(uint8_t reg, uint16_t val) {
  */
 static uint16_t i2c_read_reg(uint8_t reg) {
   uint8_t data[2] = {0};
-
-  i2c_cmd_handle_t cmd = i2c_cmd_link_create();
-  i2c_master_start(cmd);
-  i2c_master_write_byte(cmd, (AC101_ADDR << 1) | WRITE_BIT, ACK_CHECK_EN);
-  i2c_master_write_byte(cmd, reg, ACK_CHECK_EN);
-  i2c_master_start(cmd);
-  i2c_master_write_byte(cmd, (AC101_ADDR << 1) | READ_BIT,
-                        ACK_CHECK_EN);  //check or not
-  i2c_master_read(cmd, data, 2, ACK_VAL);
-  i2c_master_stop(cmd);
-  i2c_master_cmd_begin(i2c_port, cmd, 1000 / portTICK_PERIOD_MS);
-  i2c_cmd_link_delete(cmd);
+  
+  esp_err_t ret = i2c_bus_read(AC101_ADDR, reg, data, 2);
+  if (ret != ESP_OK) {
+    return 0;
+  }
 
   return (data[0] << 8) + data[1];
-  ;
 }
 
 /****************************************************************************************

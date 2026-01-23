@@ -1,5 +1,5 @@
 #include "InternalAudioSink.h"
-#include "driver/i2s.h"
+#include "driver/i2s_std.h"
 
 InternalAudioSink::InternalAudioSink() {
   softwareVolumeControl = true;

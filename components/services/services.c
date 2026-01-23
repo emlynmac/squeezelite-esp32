@@ -14,7 +14,7 @@
 #include "driver/rtc_io.h"
 #include "driver/gpio.h"
 #include "driver/ledc.h"
-#include "driver/i2c.h"
+#include "i2c_bus.h"
 #include "platform_config.h"
 #include "gpio_exp.h"
 #include "battery.h"
@@ -369,13 +369,16 @@ void services_init(void) {
 	// set potential power GPIO on chip first in case expanders are powered using these
 	parse_set_GPIO(set_chip_power_gpio);
 
-	// shared I2C bus
+	// shared I2C bus using new i2c_master driver
 	const i2c_config_t * i2c_config = config_i2c_get(&i2c_system_port);
-	ESP_LOGI(TAG,"Configuring I2C sda:%d scl:%d port:%u speed:%u", i2c_config->sda_io_num, i2c_config->scl_io_num, i2c_system_port, i2c_config->master.clk_speed);
+	ESP_LOGI(TAG,"Configuring I2C sda:%d scl:%d port:%u speed:%d", i2c_config->sda_io_num, i2c_config->scl_io_num, i2c_system_port, i2c_config->master.clk_speed);
 
 	if (i2c_config->sda_io_num != -1 && i2c_config->scl_io_num != -1) {
-		i2c_param_config(i2c_system_port, i2c_config);
-		i2c_driver_install(i2c_system_port, i2c_config->mode, 0, 0, 0 );
+		esp_err_t ret = i2c_bus_init(i2c_system_port, i2c_config->sda_io_num, i2c_config->scl_io_num, i2c_config->master.clk_speed);
+		if (ret != ESP_OK) {
+			i2c_system_port = -1;
+			ESP_LOGE(TAG, "Failed to initialize I2C bus: %s", esp_err_to_name(ret));
+		}
 	} else {
 		i2c_system_port = -1;
 		ESP_LOGW(TAG, "no I2C configured");

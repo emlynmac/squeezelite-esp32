@@ -11,7 +11,6 @@
 #include "esp_log.h"
 #include "esp_chip_info.h"
 #include "driver/gpio.h"
-#include "driver/i2c.h"
 #include "driver/spi_master.h"
 #include "platform_config.h"
 #include "accessors.h"
@@ -270,7 +269,7 @@ esp_err_t config_i2c_set(const i2c_config_t * config, int port){
 	esp_err_t err=ESP_OK;
 	char * config_buffer=malloc_init_external(buffer_size);
 	if(config_buffer)  {
-		snprintf(config_buffer,buffer_size,"scl=%u,sda=%u,speed=%" PRIu32 ",port=%u",config->scl_io_num,config->sda_io_num,config->master.clk_speed,port);
+		snprintf(config_buffer,buffer_size,"scl=%u,sda=%u,speed=%d,port=%u",config->scl_io_num,config->sda_io_num,config->master.clk_speed,port);
 		log_send_messaging(MESSAGING_INFO,"Updating I2C configuration to %s",config_buffer);
 		err = config_set_value(NVS_TYPE_STR, "i2c_config", config_buffer);
 		if(err!=ESP_OK){
@@ -537,12 +536,12 @@ const display_config_t * config_display_get(){
 const i2c_config_t * config_i2c_get(int * i2c_port) {
 	char *nvs_item;
 	static i2c_config_t i2c = {
-		.mode = I2C_MODE_MASTER,
+		.mode = 0,  // Master mode
 		.sda_io_num = -1,
-		.sda_pullup_en = GPIO_PULLUP_ENABLE,
+		.sda_pullup_en = 1,  // GPIO_PULLUP_ENABLE
 		.scl_io_num = -1,
-		.scl_pullup_en = GPIO_PULLUP_ENABLE,
-		.master.clk_speed = 0,
+		.scl_pullup_en = 1,  // GPIO_PULLUP_ENABLE
+		.master = { .clk_speed = 0 },
 	};
 
 	i2c.master.clk_speed = i2c_system_speed;

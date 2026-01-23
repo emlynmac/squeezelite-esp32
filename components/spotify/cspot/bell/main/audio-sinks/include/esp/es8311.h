@@ -12,7 +12,6 @@
 
 #ifndef _ES8311_H
 #define _ES8311_H
-#include "driver/i2c.h"
 #include "esxxx_common.h"
 
 /*

@@ -13,8 +13,7 @@
 //#define LOG_LOCAL_LEVEL ESP_LOG_DEBUG
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include "driver/i2s.h"
-#include "driver/i2c.h"
+#include "driver/i2s_std.h"
 #include "driver/gpio.h"
 #include "esp_log.h"
 #include "adac.h"

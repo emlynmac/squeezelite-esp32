@@ -9,8 +9,7 @@
 #include <vector>
 #include "BufferedAudioSink.h"
 #include "driver/gpio.h"
-#include "driver/i2c.h"
-#include "driver/i2s.h"
+#include "driver/i2s_std.h"
 #include "esp_err.h"
 #include "esp_log.h"
 

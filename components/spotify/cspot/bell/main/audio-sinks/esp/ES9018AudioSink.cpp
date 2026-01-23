@@ -1,6 +1,6 @@
 #include "ES9018AudioSink.h"
 
-#include "driver/i2s.h"
+#include "driver/i2s_std.h"
 
 ES9018AudioSink::ES9018AudioSink() {
   i2s_config_t i2s_config = {
