@@ -321,12 +321,22 @@ static esp_err_t i2s_zero_dma_buffer_compat(void) {
 	if (i2s_tx_handle == NULL) {
 		return ESP_ERR_INVALID_STATE;
 	}
-	// In ESP-IDF 5.x, we can preload silence
+	// In ESP-IDF 5.x, use preload for disabled channel, write for enabled channel
 	static uint8_t zero_buf[512] = {0};
 	size_t bytes_written;
-	// Write several zero buffers to fill DMA
-	for (int i = 0; i < i2s_config.dma_buf_count; i++) {
-		i2s_channel_write(i2s_tx_handle, zero_buf, sizeof(zero_buf), &bytes_written, 0);
+	
+	// Try to preload first (works when channel is disabled)
+	esp_err_t ret = i2s_channel_preload_data(i2s_tx_handle, zero_buf, sizeof(zero_buf), &bytes_written);
+	if (ret == ESP_OK) {
+		// Preload succeeded, channel was disabled - preload remaining buffers
+		for (int i = 1; i < i2s_config.dma_buf_count; i++) {
+			i2s_channel_preload_data(i2s_tx_handle, zero_buf, sizeof(zero_buf), &bytes_written);
+		}
+	} else if (ret == ESP_ERR_INVALID_STATE) {
+		// Channel is already enabled, use write instead
+		for (int i = 0; i < i2s_config.dma_buf_count; i++) {
+			i2s_channel_write(i2s_tx_handle, zero_buf, sizeof(zero_buf), &bytes_written, 0);
+		}
 	}
 	return ESP_OK;
 }
