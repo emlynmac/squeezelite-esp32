@@ -26,6 +26,8 @@
 #include "mdns.h"
 #include "mbedtls/version.h"
 #include <mbedtls/x509.h>
+#include <mbedtls/entropy.h>
+#include <mbedtls/ctr_drbg.h>
 #endif
 
 #include "util.h"
@@ -831,17 +833,33 @@ static char *rsa_apply(unsigned char *input, int inlen, int *outlen, int mode)
 #else
 	mbedtls_pk_context pkctx;
 	mbedtls_rsa_context *trsa;
+	mbedtls_entropy_context entropy;
+	mbedtls_ctr_drbg_context ctr_drbg;
 	size_t olen;
-	
-	/*
-	we should do entropy initialization & pass a rng function but this
-	consumes a ton of stack and there is no security concern here. Anyway,
-	mbedtls takes a lot of stack, unfortunately ...
-	*/
+
+	// Initialize RNG
+	mbedtls_entropy_init(&entropy);
+	mbedtls_ctr_drbg_init(&ctr_drbg);
+	int ret = mbedtls_ctr_drbg_seed(&ctr_drbg, mbedtls_entropy_func, &entropy, NULL, 0);
+	if (ret != 0)
+	{
+		LOG_ERROR("Failed to seed RNG: -0x%04x", -ret);
+		mbedtls_ctr_drbg_free(&ctr_drbg);
+		mbedtls_entropy_free(&entropy);
+		return NULL;
+	}
 
 	mbedtls_pk_init(&pkctx);
-	mbedtls_pk_parse_key(&pkctx, (unsigned char *)super_secret_key,
-		sizeof(super_secret_key), NULL, 0, NULL, NULL);
+	ret = mbedtls_pk_parse_key(&pkctx, (unsigned char *)super_secret_key,
+														 sizeof(super_secret_key), NULL, 0, mbedtls_ctr_drbg_random, &ctr_drbg);
+	if (ret != 0)
+	{
+		LOG_ERROR("Failed to parse RSA key: -0x%04x", -ret);
+		mbedtls_pk_free(&pkctx);
+		mbedtls_ctr_drbg_free(&ctr_drbg);
+		mbedtls_entropy_free(&entropy);
+		return NULL;
+	}
 
 	uint8_t *outbuf = NULL;
 	trsa = mbedtls_pk_rsa(pkctx);
@@ -851,18 +869,32 @@ static char *rsa_apply(unsigned char *input, int inlen, int *outlen, int mode)
 	case RSA_MODE_AUTH:
 		mbedtls_rsa_set_padding(trsa, MBEDTLS_RSA_PKCS_V15, MBEDTLS_MD_NONE);
 		outbuf = malloc(rsa_len);
-		mbedtls_rsa_pkcs1_encrypt(trsa, NULL, NULL, inlen, input, outbuf);
+		ret = mbedtls_rsa_pkcs1_encrypt(trsa, mbedtls_ctr_drbg_random, &ctr_drbg, inlen, input, outbuf);
+		if (ret != 0)
+		{
+			LOG_ERROR("RSA encrypt failed: -0x%04x", -ret);
+			free(outbuf);
+			outbuf = NULL;
+		}
 		*outlen = rsa_len;
 		break;
 	case RSA_MODE_KEY:
 		mbedtls_rsa_set_padding(trsa, MBEDTLS_RSA_PKCS_V21, MBEDTLS_MD_SHA1);
 		outbuf = malloc(rsa_len);
-		mbedtls_rsa_pkcs1_decrypt(trsa, NULL, NULL, &olen, input, outbuf, rsa_len);
+		ret = mbedtls_rsa_pkcs1_decrypt(trsa, mbedtls_ctr_drbg_random, &ctr_drbg, &olen, input, outbuf, rsa_len);
+		if (ret != 0)
+		{
+			LOG_ERROR("RSA decrypt failed: -0x%04x", -ret);
+			free(outbuf);
+			outbuf = NULL;
+		}
 		*outlen = olen;
 		break;
 	}
 
 	mbedtls_pk_free(&pkctx);
+	mbedtls_ctr_drbg_free(&ctr_drbg);
+	mbedtls_entropy_free(&entropy);
 
 	return (char*) outbuf;
 #endif
