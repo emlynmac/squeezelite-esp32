@@ -704,9 +704,8 @@ static void bt_av_hdl_stack_evt(uint16_t event, void *p_param)
     switch (event) {
     case BT_APP_EVT_STACK_UP: {
     	ESP_LOGI(TAG,"BT Stack going up.");
+
         /* set up device name */
-
-
         char * a2dp_dev_name = 	config_alloc_get_default(NVS_TYPE_STR, "a2dp_dev_name", CONFIG_A2DP_DEV_NAME, 0);
     	if(a2dp_dev_name  == NULL){
     		ESP_LOGW(TAG,"Unable to retrieve the a2dp device name from nvs");

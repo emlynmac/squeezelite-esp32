@@ -210,16 +210,18 @@ void bt_app_a2d_cb(esp_a2d_cb_event_t event, esp_a2d_cb_param_t *param)
     switch (event) {
     case ESP_A2D_CONNECTION_STATE_EVT:
     case ESP_A2D_AUDIO_STATE_EVT:
-    case ESP_A2D_AUDIO_CFG_EVT: {
+    case ESP_A2D_AUDIO_CFG_EVT:
+    case ESP_A2D_PROF_STATE_EVT:
+    case ESP_A2D_SEP_REG_STATE_EVT:
+    case ESP_A2D_SNK_PSC_CFG_EVT:
+    case ESP_A2D_SNK_SET_DELAY_VALUE_EVT:
+    case ESP_A2D_SNK_GET_DELAY_VALUE_EVT:
+    {
         bt_app_work_dispatch(bt_av_hdl_a2d_evt, event, param, sizeof(esp_a2d_cb_param_t), NULL);
         break;
     }
-    case ESP_A2D_PROF_STATE_EVT: {
-        ESP_LOGI(BT_AV_TAG, "Bluetooth Init complete");
-        break;
-    }    
     default:
-        ESP_LOGE(BT_AV_TAG, "Invalid A2DP event: %d", event);
+        ESP_LOGE(BT_AV_TAG, "Unahdled A2DP event: %d", event);
         break;
     }
 }
@@ -331,29 +333,55 @@ static void bt_av_hdl_a2d_evt(uint16_t event, void *p_param)
     }
     case ESP_A2D_AUDIO_CFG_EVT: {
         a2d = (esp_a2d_cb_param_t *)(p_param);
-        ESP_LOGD(BT_AV_TAG, "A2DP audio stream configuration, codec type %d", a2d->audio_cfg.mcc.type);
-        // for now only SBC stream is supported
-        if (a2d->audio_cfg.mcc.type == ESP_A2D_MCT_SBC) {
+        esp_a2d_mcc_t *p_mcc = &a2d->audio_cfg.mcc;
+        ESP_LOGI(BT_AV_TAG, "A2DP audio stream configuration, codec type: %d", p_mcc->type);
+        /* for now only SBC stream is supported */
+        if (p_mcc->type == ESP_A2D_MCT_SBC)
+        {
             s_sample_rate = 16000;
-            uint8_t samp_freq = a2d->audio_cfg.mcc.cie.sbc_info.samp_freq;
-            if (samp_freq & (0x01 << 2)) {
+            int ch_count = 2;
+            if (p_mcc->cie.sbc_info.samp_freq & ESP_A2D_SBC_CIE_SF_32K)
+            {
                 s_sample_rate = 32000;
-            } else if (samp_freq & (0x01 << 1)) {
+            }
+            else if (p_mcc->cie.sbc_info.samp_freq & ESP_A2D_SBC_CIE_SF_44K)
+            {
                 s_sample_rate = 44100;
-            } else if (samp_freq & (0x01 << 0)) {
+            }
+            else if (p_mcc->cie.sbc_info.samp_freq & ESP_A2D_SBC_CIE_SF_48K)
+            {
                 s_sample_rate = 48000;
             }
-			(*bt_app_a2d_cmd_cb)(BT_SINK_RATE, s_sample_rate);
-            
+
+            if (p_mcc->cie.sbc_info.ch_mode & ESP_A2D_SBC_CIE_CH_MODE_MONO)
+            {
+                ch_count = 1;
+            }
+            (*bt_app_a2d_cmd_cb)(BT_SINK_RATE, s_sample_rate);
+
             ESP_LOGI(BT_AV_TAG, "Configure audio player ch:%x freq:%x alloc:%x sub:%x block:%x min_bp:%u max_bp:%u",
-                     a2d->audio_cfg.mcc.cie.sbc_info.ch_mode,
-                     a2d->audio_cfg.mcc.cie.sbc_info.samp_freq,
-                     a2d->audio_cfg.mcc.cie.sbc_info.alloc_mthd,
-                     a2d->audio_cfg.mcc.cie.sbc_info.num_subbands,
-                     a2d->audio_cfg.mcc.cie.sbc_info.block_len,
-                     a2d->audio_cfg.mcc.cie.sbc_info.min_bitpool,
-                     a2d->audio_cfg.mcc.cie.sbc_info.max_bitpool);
+                     p_mcc->cie.sbc_info.ch_mode,
+                     p_mcc->cie.sbc_info.samp_freq,
+                     p_mcc->cie.sbc_info.alloc_mthd,
+                     p_mcc->cie.sbc_info.num_subbands,
+                     p_mcc->cie.sbc_info.block_len,
+                     p_mcc->cie.sbc_info.min_bitpool,
+                     p_mcc->cie.sbc_info.max_bitpool);
             ESP_LOGI(BT_AV_TAG, "Audio player configured, sample rate=%d", s_sample_rate);
+        }
+        break;
+    }
+    case ESP_A2D_SNK_PSC_CFG_EVT:
+    {
+        a2d = (esp_a2d_cb_param_t *)(p_param);
+        ESP_LOGI(BT_AV_TAG, "protocol service capabilities configured: 0x%x ", a2d->a2d_psc_cfg_stat.psc_mask);
+        if (a2d->a2d_psc_cfg_stat.psc_mask & ESP_A2D_PSC_DELAY_RPT)
+        {
+            ESP_LOGI(BT_AV_TAG, "Peer device support delay reporting");
+        }
+        else
+        {
+            ESP_LOGI(BT_AV_TAG, "Peer device unsupported delay reporting");
         }
         break;
     }
@@ -573,7 +601,18 @@ static void bt_av_hdl_avrc_tg_evt(uint16_t event, void *p_param)
     }
     case ESP_AVRC_TG_PROF_STATE_EVT:
     {
-        ESP_LOGD(BT_RC_TG_TAG, "AVRCP controller init/deinit");
+        if (ESP_AVRC_INIT_SUCCESS == rc->avrc_tg_init_stat.state)
+        {
+            ESP_LOGD(BT_RC_CT_TAG, "AVRCP TG STATE: Init Complete");
+        }
+        else if (ESP_AVRC_DEINIT_SUCCESS == rc->avrc_tg_init_stat.state)
+        {
+            ESP_LOGD(BT_RC_CT_TAG, "AVRCP TG STATE: Deinit Complete");
+        }
+        else
+        {
+            ESP_LOGE(BT_RC_CT_TAG, "AVRCP TG STATE error: %d", rc->avrc_tg_init_stat.state);
+        }
         break;
     }
     default:
