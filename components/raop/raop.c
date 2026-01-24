@@ -36,6 +36,36 @@
 #include "dmap_parser.h"
 #include "log_util.h"
 
+extern log_level	raop_loglevel;
+static log_level 	*loglevel = &raop_loglevel;
+
+#ifndef WIN32
+// Application-wide entropy and DRBG contexts for mbedtls
+mbedtls_entropy_context raop_entropy;
+mbedtls_ctr_drbg_context raop_ctr_drbg;
+static bool raop_crypto_initialized = false;
+
+int raop_crypto_init(void) {
+	if (raop_crypto_initialized) {
+		return 0;
+	}
+	
+	mbedtls_entropy_init(&raop_entropy);
+	mbedtls_ctr_drbg_init(&raop_ctr_drbg);
+	int ret = mbedtls_ctr_drbg_seed(&raop_ctr_drbg, mbedtls_entropy_func, &raop_entropy, NULL, 0);
+	if (ret != 0) {
+		LOG_ERROR("Failed to seed RAOP RNG: -0x%04x", -ret);
+		mbedtls_ctr_drbg_free(&raop_ctr_drbg);
+		mbedtls_entropy_free(&raop_entropy);
+		return ret;
+	}
+	
+	raop_crypto_initialized = true;
+	LOG_INFO("RAOP crypto initialized");
+	return 0;
+}
+#endif
+
 #define RTSP_STACK_SIZE 	(8*1024)
 #define SEARCH_STACK_SIZE	(3*1024)
 
@@ -89,8 +119,6 @@ typedef struct raop_ctx_s {
 } raop_ctx_t;
 
 extern struct mdnsd* glmDNSServer;
-extern log_level	raop_loglevel;
-static log_level 	*loglevel = &raop_loglevel;
 
 #ifdef WIN32
 static void*	rtsp_thread(void *arg);
@@ -833,35 +861,19 @@ static char *rsa_apply(unsigned char *input, int inlen, int *outlen, int mode)
 #else
 	mbedtls_pk_context pkctx;
 	mbedtls_rsa_context *trsa;
-	mbedtls_entropy_context entropy;
-	mbedtls_ctr_drbg_context ctr_drbg;
+	uint8_t *outbuf = NULL;
 	size_t olen;
 
-	// Initialize RNG
-	mbedtls_entropy_init(&entropy);
-	mbedtls_ctr_drbg_init(&ctr_drbg);
-	int ret = mbedtls_ctr_drbg_seed(&ctr_drbg, mbedtls_entropy_func, &entropy, NULL, 0);
-	if (ret != 0)
-	{
-		LOG_ERROR("Failed to seed RNG: -0x%04x", -ret);
-		mbedtls_ctr_drbg_free(&ctr_drbg);
-		mbedtls_entropy_free(&entropy);
-		return NULL;
-	}
-
 	mbedtls_pk_init(&pkctx);
-	ret = mbedtls_pk_parse_key(&pkctx, (unsigned char *)super_secret_key,
-														 sizeof(super_secret_key), NULL, 0, mbedtls_ctr_drbg_random, &ctr_drbg);
+	int ret = mbedtls_pk_parse_key(&pkctx, (unsigned char *)super_secret_key,
+								   sizeof(super_secret_key), NULL, 0, mbedtls_ctr_drbg_random, &raop_ctr_drbg);
 	if (ret != 0)
 	{
 		LOG_ERROR("Failed to parse RSA key: -0x%04x", -ret);
 		mbedtls_pk_free(&pkctx);
-		mbedtls_ctr_drbg_free(&ctr_drbg);
-		mbedtls_entropy_free(&entropy);
 		return NULL;
 	}
 
-	uint8_t *outbuf = NULL;
 	trsa = mbedtls_pk_rsa(pkctx);
 	size_t rsa_len = mbedtls_rsa_get_len(trsa);
 
@@ -869,7 +881,7 @@ static char *rsa_apply(unsigned char *input, int inlen, int *outlen, int mode)
 	case RSA_MODE_AUTH:
 		mbedtls_rsa_set_padding(trsa, MBEDTLS_RSA_PKCS_V15, MBEDTLS_MD_NONE);
 		outbuf = malloc(rsa_len);
-		ret = mbedtls_rsa_pkcs1_encrypt(trsa, mbedtls_ctr_drbg_random, &ctr_drbg, inlen, input, outbuf);
+		ret = mbedtls_rsa_pkcs1_encrypt(trsa, mbedtls_ctr_drbg_random, &raop_ctr_drbg, inlen, input, outbuf);
 		if (ret != 0)
 		{
 			LOG_ERROR("RSA encrypt failed: -0x%04x", -ret);
@@ -881,7 +893,7 @@ static char *rsa_apply(unsigned char *input, int inlen, int *outlen, int mode)
 	case RSA_MODE_KEY:
 		mbedtls_rsa_set_padding(trsa, MBEDTLS_RSA_PKCS_V21, MBEDTLS_MD_SHA1);
 		outbuf = malloc(rsa_len);
-		ret = mbedtls_rsa_pkcs1_decrypt(trsa, mbedtls_ctr_drbg_random, &ctr_drbg, &olen, input, outbuf, rsa_len);
+		ret = mbedtls_rsa_pkcs1_decrypt(trsa, mbedtls_ctr_drbg_random, &raop_ctr_drbg, &olen, input, outbuf, rsa_len);
 		if (ret != 0)
 		{
 			LOG_ERROR("RSA decrypt failed: -0x%04x", -ret);
@@ -893,8 +905,7 @@ static char *rsa_apply(unsigned char *input, int inlen, int *outlen, int mode)
 	}
 
 	mbedtls_pk_free(&pkctx);
-	mbedtls_ctr_drbg_free(&ctr_drbg);
-	mbedtls_entropy_free(&entropy);
+	// Note: raop_entropy and raop_ctr_drbg are global, kept alive for reuse
 
 	return (char*) outbuf;
 #endif

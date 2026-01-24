@@ -187,6 +187,10 @@ void raop_sink_init(raop_cmd_vcb_t cmd_cb, raop_data_cb_t data_cb) {
 	raop_cbs.cmd = cmd_cb;
 	raop_cbs.data = data_cb;
 
+#ifndef WIN32
+	raop_crypto_init();
+#endif
+
 	network_register_state_callback(NETWORK_WIFI_ACTIVE_STATE, WIFI_CONNECTED_STATE, "raop_sink_start", raop_sink_start);
 	network_register_state_callback(NETWORK_ETH_ACTIVE_STATE, ETH_ACTIVE_CONNECTED_STATE, "raop_sink_start", raop_sink_start);
 }
