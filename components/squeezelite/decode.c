@@ -23,6 +23,10 @@
 
 #include "squeezelite.h"
 
+#if EMBEDDED
+#include "esp_heap_caps.h"
+#endif
+
 log_level loglevel;
 
 extern struct buffer *streambuf;
@@ -211,9 +215,17 @@ void decode_init(log_level level, const char *include_codecs, const char *exclud
 	pthread_attr_t attr;
 	pthread_attr_init(&attr);
 #ifdef PTHREAD_STACK_MIN
-	pthread_attr_setstacksize(&attr, PTHREAD_STACK_MIN + DECODE_THREAD_STACK_SIZE);
+	size_t stack_size = PTHREAD_STACK_MIN + DECODE_THREAD_STACK_SIZE;
+	pthread_attr_setstacksize(&attr, stack_size);
+	LOG_INFO("Creating decode thread with stack size %zu, heap internal: %u, heap SPIRAM: %u",
+			 stack_size, heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT),
+			 heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
 #endif
-	pthread_create_name(&thread, &attr, decode_thread, NULL, "decode");
+	int ret = pthread_create_name(&thread, &attr, decode_thread, NULL, "decode");
+	if (ret != 0) {
+		LOG_ERROR("Failed to create decode thread! error=%d, heap internal: %u",
+				  ret, heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT));
+	}
 	pthread_attr_destroy(&attr);
 #endif
 #if WIN
